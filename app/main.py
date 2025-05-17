@@ -3,7 +3,7 @@ Superannuation Churn Predictor Streamlit App
 
 This app generates synthetic superannuation customer data, trains a churn prediction model,
 displays data samples and distributions, allows churn prediction for new customers,
-visualizes model fit quality, and shows project documentation.
+visualises model fit quality, and shows project documentation.
 
 Author: Michael Booth
 Date: 2025-05-17
@@ -199,6 +199,32 @@ class SuperannuationChurnModel:
 st.set_page_config(page_title="Superannuation Churn Predictor", layout="wide")
 st.title("Superannuation Churn Predictor")
 
+with st.sidebar:
+    st.header("Predict Churn for a New Customer")
+    with st.form("predict_form"):
+        age = st.slider("Age", 25, 65, 40)
+        last_login_days = st.slider("Days Since Last Login", 1, 180, 30)
+        balance = st.number_input("Balance", 20000, 300000, 50000, step=1000)
+        num_accounts = st.selectbox("Number of Accounts", [1, 2, 3, 4], index=0)
+        satisfaction_score = st.selectbox(
+            "Satisfaction Score", [1, 2, 3, 4, 5], index=2
+        )
+        submitted = st.form_submit_button("Predict")
+    if submitted:
+        input_data = {
+            "age": age,
+            "balance": balance,
+            "num_accounts": num_accounts,
+            "last_login_days": last_login_days,
+            "satisfaction_score": satisfaction_score,
+        }
+        if st.session_state["model"].is_trained:
+            prob = st.session_state["model"].predict_proba(input_data)
+            st.write(f"**Predicted churn probability:** {prob:.2%}")
+            st.write("**Prediction:**", "Churn" if prob > 0.5 else "No Churn")
+        else:
+            st.warning("Please train the model first on the 'Model Training' tab.")
+
 with open("config.toml", "rb") as f:
     config = tomllib.load(f)
 
@@ -217,30 +243,24 @@ if "model" not in st.session_state:
 if "fit_stats" not in st.session_state:
     st.session_state["fit_stats"] = None
 
-tab1, tab2, tab3, tab4, tab5, tab_readme = st.tabs(
+
+tab1, tab2, tab4, tab5, tab_readme = st.tabs(
     [
-        "🔍 Data Sample",
         "🧠 Model Training",
-        "🔮 Predict Churn",
+        "🔍 Data Sample",
         "📊 Data Distributions",
         "📈 Model Fit Visualisation",
         "📖 Readme",
     ]
 )
 
-with tab_readme:
-    display_markdown_file("README.md")
 
 with tab1:
-    st.header("Sample of Synthetic Data")
-    st.dataframe(st.session_state["data"].sample(10))
-
-with tab2:
     st.header("Fit the Model and View Statistics")
     if st.button("Fit Model"):
         stats = st.session_state["model"].train(st.session_state["data"])
         st.session_state["fit_stats"] = stats
-        st.success("Model trained!")
+        st.toast("Model trained!")
     if st.session_state["fit_stats"]:
         st.subheader("Model Accuracy")
         st.write(f"{st.session_state['fit_stats']['accuracy']:.2%}")
@@ -264,36 +284,9 @@ with tab2:
         st.dataframe(report_df.style.format("{:.2f}"))
         display_markdown_file("metrics.md")
 
-
-with tab3:
-    st.header("Predict Churn for a New Customer")
-    with st.form("predict_form"):
-        col1, col2, col3 = st.columns(3, gap="large")
-        with col1:
-            age = st.slider("Age", 25, 65, 40)
-            last_login_days = st.slider("Days Since Last Login", 1, 180, 30)
-        with col2:
-            balance = st.number_input("Balance", 20000, 300000, 50000, step=1000)
-        with col3:
-            num_accounts = st.selectbox("Number of Accounts", [1, 2, 3, 4], index=0)
-            satisfaction_score = st.selectbox(
-                "Satisfaction Score", [1, 2, 3, 4, 5], index=2
-            )
-        submitted = st.form_submit_button("Predict")
-    if submitted:
-        input_data = {
-            "age": age,
-            "balance": balance,
-            "num_accounts": num_accounts,
-            "last_login_days": last_login_days,
-            "satisfaction_score": satisfaction_score,
-        }
-        if st.session_state["model"].is_trained:
-            prob = st.session_state["model"].predict_proba(input_data)
-            st.write(f"**Predicted churn probability:** {prob:.2%}")
-            st.write("**Prediction:**", "Churn" if prob > 0.5 else "No Churn")
-        else:
-            st.warning("Please train the model first on the 'Model Training' tab.")
+with tab2:
+    st.header("Sample of Synthetic Data")
+    st.dataframe(st.session_state["data"].sample(10))
 
     with tab4:
         st.header("Feature Distributions")
@@ -328,7 +321,7 @@ with tab3:
 
 
 with tab5:
-    st.header("Model Fit Visualization")
+    st.header("Model Fit Visualisation")
     if not st.session_state["model"].is_trained:
         st.warning("Please train the model first on the 'Model Training' tab.")
     else:
@@ -364,3 +357,6 @@ with tab5:
             type="line", x0=0, y0=0, x1=1, y1=1, line=dict(color="red", dash="dash")
         )
         st.plotly_chart(fig_actual_pred, use_container_width=True)
+
+    with tab_readme:
+        display_markdown_file("README.md")
