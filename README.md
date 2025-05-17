@@ -178,13 +178,9 @@ superannuation-churn-predictor/
 
 Pull requests and suggestions are welcome! Please open an issue or submit a PR.
 
----
-
 ## License
 
 [MIT License](LICENSE)
-
----
 
 ## Contact
 
