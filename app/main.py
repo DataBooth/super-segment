@@ -1,9 +1,12 @@
 import tomllib
 from pathlib import Path
 
+import duckdb
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import seaborn as sns
 import streamlit as st
 from faker import Faker
 from loguru import logger
@@ -14,65 +17,89 @@ from sklearn.model_selection import train_test_split
 # --- Utility Functions ---
 
 
-def generate_age() -> int:
-    """Generate age using a normal distribution, clipped to 18-65."""
-    return int(np.clip(np.random.normal(loc=40, scale=10), 18, 65))
+def generate_age(config) -> int:
+    return int(
+        np.clip(
+            np.random.normal(loc=config["age"]["mean"], scale=config["age"]["std"]),
+            config["age"]["min"],
+            config["age"]["max"],
+        )
+    )
 
 
-def generate_balance() -> int:
-    """Generate balance using a log-normal distribution, clipped to 1,000–1,000,000."""
-    balance = int(np.random.lognormal(mean=10, sigma=0.7))
-    return np.clip(balance, 1000, 1_000_000)
+def generate_balance(config) -> int:
+    balance = int(
+        np.random.lognormal(
+            mean=config["balance"]["mean"], sigma=config["balance"]["sigma"]
+        )
+    )
+    return np.clip(balance, config["balance"]["min"], config["balance"]["max"])
 
 
-def generate_num_accounts() -> int:
-    """Generate number of accounts using ATO-based categorical probabilities."""
-    return np.random.choice([1, 2, 3, 4], p=[0.63, 0.25, 0.09, 0.03])
+def generate_num_accounts(config) -> int:
+    return np.random.choice(
+        config["num_accounts"]["choices"], p=config["num_accounts"]["probabilities"]
+    )
 
 
-def generate_last_login_days() -> int:
-    """Generate days since last login using an exponential distribution, capped at 365."""
-    return int(np.clip(np.random.exponential(scale=90), 0, 365))
+def generate_last_login_days(config) -> int:
+    return int(
+        np.clip(
+            np.random.exponential(scale=config["last_login_days"]["scale"]),
+            config["last_login_days"]["min"],
+            config["last_login_days"]["max"],
+        )
+    )
 
 
-def generate_satisfaction_score() -> int:
-    """Generate satisfaction score with a realistic, right-skewed distribution."""
-    return np.random.choice([1, 2, 3, 4, 5], p=[0.05, 0.10, 0.20, 0.35, 0.30])
+def generate_satisfaction_score(config) -> int:
+    return np.random.choice(
+        config["satisfaction_score"]["choices"],
+        p=config["satisfaction_score"]["probabilities"],
+    )
 
 
 def compute_churn_probability(
-    num_accounts, last_login_days, satisfaction_score, age, balance
+    num_accounts, last_login_days, satisfaction_score, age, balance, config
 ) -> float:
-    """Compute churn probability using a logistic-like model, scaled to produce realistic churn rates."""
+    churn_cfg = config["churn_model"]
     logit = (
-        0.8 * (num_accounts - 1)
-        + 0.01 * (last_login_days - 90)
-        + -0.7 * (satisfaction_score - 3)
-        + 0.015 * (age - 40)
-        + 0.000005 * (balance - 50000)
+        churn_cfg["beta_num_accounts"]
+        * (num_accounts - churn_cfg["center_num_accounts"])
+        + churn_cfg["beta_last_login_days"]
+        * (last_login_days - churn_cfg["center_last_login_days"])
+        + churn_cfg["beta_satisfaction_score"]
+        * (satisfaction_score - churn_cfg["center_satisfaction_score"])
+        + churn_cfg["beta_age"] * (age - churn_cfg["center_age"])
+        + churn_cfg["beta_balance"] * (balance - churn_cfg["center_balance"])
     )
     churn_prob = 1 / (1 + np.exp(-logit))
-    churn_prob = churn_prob * 0.28  # scale to target ~19% churn rate
+    churn_prob = churn_prob * churn_cfg["scaling_factor"]
     return churn_prob
 
 
 def generate_churn(
-    num_accounts, last_login_days, satisfaction_score, age, balance
+    num_accounts, last_login_days, satisfaction_score, age, balance, config
 ) -> int:
-    """Generate churn label as a Bernoulli sample from the computed probability."""
     churn_prob = compute_churn_probability(
-        num_accounts, last_login_days, satisfaction_score, age, balance
+        num_accounts, last_login_days, satisfaction_score, age, balance, config
     )
     return int(np.random.rand() < churn_prob)
 
 
 def display_markdown_file(
-    filepath: str, encoding: str = "utf-8", warn_if_missing: bool = True
+    filepath: str,
+    remove_title: str = None,
+    encoding: str = "utf-8",
+    warn_if_missing: bool = True,
 ):
     """Display a markdown file in Streamlit, or show a warning if the file does not exist."""
     path = Path(filepath)
     if path.exists():
-        st.markdown(path.read_text(encoding=encoding))
+        contents = path.read_text(encoding=encoding)
+        if remove_title:
+            contents.replace(remove_title, "")
+        st.markdown(contents)
     elif warn_if_missing:
         st.warning(f"{path.name} file not found in the project directory.")
 
@@ -80,7 +107,7 @@ def display_markdown_file(
 # --- Data and Model Classes ---
 
 
-class SuperannuationDataGenerator:
+class MemberDataGenerator:
     def __init__(self, config: dict) -> None:
         self.config = config
         self.fake = Faker()
@@ -93,18 +120,24 @@ class SuperannuationDataGenerator:
         domain = np.random.choice(domains)
         return f"{username}@{domain}"
 
-    def generate(self) -> pd.DataFrame:
+    def generate(self, n_samples=None) -> pd.DataFrame:
+        n = n_samples if n_samples is not None else self.config["data"]["n_samples"]
         data = []
-        for _ in range(self.config["data"]["n_samples"]):
-            age = generate_age()
-            balance = generate_balance()
-            num_accounts = generate_num_accounts()
-            last_login_days = generate_last_login_days()
-            satisfaction_score = generate_satisfaction_score()
+        for _ in range(n):
+            age = generate_age(self.config)
+            balance = generate_balance(self.config)
+            num_accounts = generate_num_accounts(self.config)
+            last_login_days = generate_last_login_days(self.config)
+            satisfaction_score = generate_satisfaction_score(self.config)
             name = self.fake.name()
             email = self.make_au_email(name)
             churned = generate_churn(
-                num_accounts, last_login_days, satisfaction_score, age, balance
+                num_accounts,
+                last_login_days,
+                satisfaction_score,
+                age,
+                balance,
+                self.config,
             )
             data.append(
                 {
@@ -119,6 +152,27 @@ class SuperannuationDataGenerator:
                 }
             )
         return pd.DataFrame(data)
+
+    def get_or_generate_member_data(n_samples, generator, config):
+        db_path = config["data"]["member_data_db_path"]
+        table = config["data"]["member_data_table"]
+        conn = duckdb.connect(db_path)
+        # Check if table exists
+        tables = conn.execute("SHOW TABLES").fetchall()
+        if (table,) in tables:
+            count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            if count >= n_samples:
+                df = conn.execute(
+                    f"SELECT * FROM {table} USING SAMPLE {n_samples} ROWS"
+                ).df()
+                conn.close()
+                return df
+        # Otherwise, generate new data and store
+        df = generator.generate(n_samples=n_samples)
+        conn.execute(f"DROP TABLE IF EXISTS {table}")
+        conn.execute(f"CREATE TABLE {table} AS SELECT * FROM df")
+        conn.close()
+        return df
 
 
 class SuperannuationChurnModel:
@@ -150,7 +204,9 @@ class SuperannuationChurnModel:
         logger.success("Model trained.")
         return {
             "accuracy": accuracy_score(self.y_test, self.y_pred),
-            "report": classification_report(self.y_test, self.y_pred, output_dict=True),
+            "report": classification_report(
+                self.y_test, self.y_pred, output_dict=True, zero_division=0
+            ),
         }
 
     def predict_proba(self, input_data: dict) -> float:
@@ -179,7 +235,7 @@ class SuperannuationChurnModel:
 class SuperChurnApp:
     def __init__(self):
         self.config = self.load_config()
-        self.data_generator = SuperannuationDataGenerator(self.config)
+        self.data_generator = MemberDataGenerator(self.config)
         self.model = None
 
     @staticmethod
@@ -189,7 +245,7 @@ class SuperChurnApp:
 
     @st.cache_data(show_spinner="Generating synthetic data...")
     def get_synthetic_data(_self, config: dict) -> pd.DataFrame:
-        generator = SuperannuationDataGenerator(config)
+        generator = MemberDataGenerator(config)
         return generator.generate()
 
     def setup_session_state(self):
@@ -235,25 +291,27 @@ class SuperChurnApp:
         with st.sidebar:
             self.sidebar_predict_form()
 
-        tab1, tab2, tab4, tab5, tab_readme = st.tabs(
+        tab1, tab2, tab3, tab4, tab5, tab_readme = st.tabs(
             [
                 "🧠 Model Training",
                 "🔍 Data Sample",
+                "📉 Pairwise plots",
                 "📊 Data Distributions",
                 "📈 Model Fit Visualisation",
-                "📖 Readme",
+                "📖 README",
             ]
         )
 
         with tab1:
-            st.header("Fit the Model and View Statistics")
-            if st.button("Fit Model"):
-                stats = st.session_state["model"].train(st.session_state["data"])
-                st.session_state["fit_stats"] = stats
-                st.toast("Model trained!")
+            # st.header("Fit the Model and View Metrics")
+            stats = st.session_state["model"].train(st.session_state["data"])
+            st.session_state["fit_stats"] = stats
+            st.toast("Model trained!")
             if st.session_state["fit_stats"]:
-                st.subheader("Model Accuracy")
-                st.write(f"{st.session_state['fit_stats']['accuracy']:.2%}")
+                st.metric(
+                    "Model Accuracy", float(st.session_state["fit_stats"]["accuracy"])
+                )
+
                 st.subheader("Classification Report")
                 report_dict = st.session_state["fit_stats"]["report"]
                 report_df = pd.DataFrame(report_dict).transpose()
@@ -263,7 +321,52 @@ class SuperChurnApp:
 
         with tab2:
             st.header("Sample of Synthetic Data")
-            st.dataframe(st.session_state["data"].sample(10))
+            st.dataframe(st.session_state["data"].sample(20), hide_index=True)
+
+        with tab3:
+            # Select the numerical features you want to include
+            pairwise_features_default = [
+                "age",
+                "balance",
+                "num_accounts",
+                "last_login_days",
+                "satisfaction_score",
+            ]
+            pairwise_features = st.multiselect(
+                "Select features for pairwise interaction plot:",
+                options=pairwise_features_default,
+                default=pairwise_features_default,
+                help="Choose which features to show in the scatterplot matrix.",
+            )
+
+            backend = self.config["data"].get("pairplot_backend", "seaborn")
+            max_sample = self.config["data"].get("max_pairplot_sample", 1000)
+            df = st.session_state["data"].sample(
+                min(len(st.session_state["data"]), max_sample)
+            )
+
+            # st.header("🔗 Pairwise Plots")
+
+            if backend == "seaborn":
+                fig = sns.pairplot(df, hue="churned", diag_kind="hist")
+                st.pyplot(fig)
+            else:
+                fig = px.scatter_matrix(
+                    df,
+                    dimensions=pairwise_features,
+                    color="churned",
+                    symbol="churned",
+                    title="Scatter Matrix of Member Data",
+                    labels={
+                        col: col.replace("_", " ").title()
+                        for col in pairwise_features + ["churned"]
+                    },
+                    height=800,
+                )
+                fig.update_traces(
+                    diagonal_visible=False
+                )  # Optionally hide the diagonal
+                st.plotly_chart(fig, use_container_width=True)
 
         with tab4:
             st.header("Feature Distributions")
@@ -342,7 +445,9 @@ class SuperChurnApp:
                 st.plotly_chart(fig_actual_pred, use_container_width=True)
 
         with tab_readme:
-            display_markdown_file("README.md")
+            display_markdown_file(
+                "README.md", remove_title=self.config["readme"]["title"]
+            )
 
 
 # --- Run the App ---

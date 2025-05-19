@@ -1,16 +1,48 @@
 [data]
 n_samples = 20000
 random_seed = 42
-age_min = 25
-age_max = 65
-balance_min = 20000
-balance_max = 300000
-num_accounts_min = 1
-num_accounts_max = 4
-last_login_days_min = 1
-last_login_days_max = 180
-satisfaction_score_min = 1
-satisfaction_score_max = 5
+member_data_db_path = "data/member_data.duckdb"
+member_data_table = "members"
+pairplot_backend = "seaborn" # or "plotly"
+max_pairplot_sample = 10000
+
+[age]
+mean = 40
+std = 10
+min = 25
+max = 65
+
+[balance]
+mean = 10
+sigma = 0.7
+min = 20000
+max = 300000
+
+[num_accounts]
+choices = [1, 2, 3, 4]
+probabilities = [0.63, 0.25, 0.09, 0.03]
+
+[last_login_days]
+scale = 90
+min = 1
+max = 180
+
+[satisfaction_score]
+choices = [1, 2, 3, 4, 5]
+probabilities = [0.05, 0.10, 0.20, 0.35, 0.30]
+
+[churn_model]
+beta_num_accounts = 0.8
+center_num_accounts = 1
+beta_last_login_days = 0.01
+center_last_login_days = 90
+beta_satisfaction_score = -0.7
+center_satisfaction_score = 3
+beta_age = 0.015
+center_age = 40
+beta_balance = 0.000005
+center_balance = 50000
+scaling_factor = 0.28
 
 [email]
 domains = [
@@ -22,3 +54,6 @@ domains = [
     "optusnet.com.au",
     "icloud.com"
 ]
+
+[readme]
+title = "# Superannuation Churn Predictor"
