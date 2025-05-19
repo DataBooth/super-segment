@@ -1,10 +1,11 @@
 [data]
-n_samples = 20000
+n_member = 100_000
 random_seed = 42
 member_data_db_path = "data/member_data.duckdb"
 member_data_table = "members"
 pairplot_backend = "seaborn" # or "plotly"
 max_pairplot_sample = 10000
+n_sample = 1_000
 
 [age]
 mean = 40

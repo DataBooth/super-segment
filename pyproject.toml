@@ -9,6 +9,7 @@ dependencies = [
     "faker>=37.3.0",
     "loguru>=0.7.3",
     "matplotlib>=3.10.3",
+    "millify>=0.1.1",
     "pandas>=2.2.3",
     "plotly>=6.1.0",
     "scikit-learn>=1.6.1",
@@ -17,3 +18,10 @@ dependencies = [
     "streamlit>=1.45.1",
     "watchdog>=6.0.0",
 ]
+
+[dependency-groups]
+dev = ["marimo>=0.13.10", "pytest>=8.3.5"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
