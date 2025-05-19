@@ -120,24 +120,25 @@ class MemberDataGenerator:
         domain = np.random.choice(domains)
         return f"{username}@{domain}"
 
-    def generate(self, n_samples=None) -> pd.DataFrame:
-        n = n_samples if n_samples is not None else self.config["data"]["n_samples"]
+    @st.cache_data
+    def generate(_self, n_samples=None) -> pd.DataFrame:
+        n = n_samples if n_samples is not None else _self.config["data"]["n_samples"]
         data = []
         for _ in range(n):
-            age = generate_age(self.config)
-            balance = generate_balance(self.config)
-            num_accounts = generate_num_accounts(self.config)
-            last_login_days = generate_last_login_days(self.config)
-            satisfaction_score = generate_satisfaction_score(self.config)
-            name = self.fake.name()
-            email = self.make_au_email(name)
+            age = generate_age(_self.config)
+            balance = generate_balance(_self.config)
+            num_accounts = generate_num_accounts(_self.config)
+            last_login_days = generate_last_login_days(_self.config)
+            satisfaction_score = generate_satisfaction_score(_self.config)
+            name = _self.fake.name()
+            email = _self.make_au_email(name)
             churned = generate_churn(
                 num_accounts,
                 last_login_days,
                 satisfaction_score,
                 age,
                 balance,
-                self.config,
+                _self.config,
             )
             data.append(
                 {
@@ -285,7 +286,9 @@ class SuperChurnApp:
 
     def run(self):
         st.set_page_config(page_title="Superannuation Churn Predictor", layout="wide")
-        st.title("Superannuation Churn Predictor")
+        st.header(
+            f"Superannuation Member Churn Predictor: {self.config['data']['n_samples']}"
+        )
         self.setup_session_state()
 
         with st.sidebar:
@@ -348,7 +351,9 @@ class SuperChurnApp:
             # st.header("🔗 Pairwise Plots")
 
             if backend == "seaborn":
-                fig = sns.pairplot(df, hue="churned", diag_kind="hist")
+                fig = sns.pairplot(
+                    df[pairwise_features + ["churned"]], hue="churned", diag_kind="hist"
+                )
                 st.pyplot(fig)
             else:
                 fig = px.scatter_matrix(
