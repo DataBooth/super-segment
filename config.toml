@@ -1,5 +1,5 @@
 [data]
-n_member = 50_000
+n_member = 20_000
 random_seed = 42
 member_data_db_path = "data/member_data.duckdb"
 member_data_table = "members"
@@ -92,3 +92,52 @@ n_clusters = 3
 fuzzy_m = 2.0
 fuzzy_max_iter = 300
 fuzzy_error = 1e-5
+
+[clusters]
+# Define 4 distinct member segments with unique characteristics
+segment_names = [
+    "Young-Professionals",
+    "Mid-Career-Savers",
+    "Pre-Retirees",
+    "Retirees"
+]
+segment_probs = [0.3, 0.4, 0.2, 0.1] # Probabilities must sum to 1
+
+[clusters.Young-Professionals]
+age = { mean = 28, std = 3, min = 18, max = 35 }
+balance = { mean = 10.0, sigma = 0.3, min = 5000, max = 50000 }
+num_accounts = { choices = [1, 2, 3], probabilities = [0.7, 0.2, 0.1] }
+profession = { choices = ["IT", "Engineering", "Healthcare"], probabilities = [
+    0.5,
+    0.3,
+    0.2
+] }
+risk_profile = { choices = ["High", "Medium"], probabilities = [0.6, 0.4] }
+
+[clusters.Mid-Career-Savers]
+age = { mean = 45, std = 5, min = 36, max = 54 }
+balance = { mean = 11.2, sigma = 0.4, min = 50000, max = 250000 }
+num_accounts = { choices = [2, 3, 4], probabilities = [0.3, 0.5, 0.2] }
+profession = { choices = ["Finance", "Law", "Management"], probabilities = [
+    0.4,
+    0.3,
+    0.3
+] }
+risk_profile = { choices = ["Medium", "Low"], probabilities = [0.7, 0.3] }
+
+[clusters.Pre-Retirees]
+age = { mean = 58, std = 4, min = 55, max = 64 }
+balance = { mean = 11.8, sigma = 0.5, min = 200000, max = 800000 }
+num_accounts = { choices = [3, 4, 5], probabilities = [0.2, 0.5, 0.3] }
+profession = { choices = ["Executive", "Consultant"], probabilities = [
+    0.6,
+    0.4
+] }
+risk_profile = { choices = ["Low"], probabilities = [1.0] }
+
+[clusters.Retirees]
+age = { mean = 72, std = 6, min = 65, max = 90 }
+balance = { mean = 11.5, sigma = 0.6, min = 100000, max = 500000 }
+num_accounts = { choices = [1, 2], probabilities = [0.8, 0.2] }
+profession = { choices = ["Retired"], probabilities = [1.0] }
+risk_profile = { choices = ["Low"], probabilities = [1.0] }

@@ -108,6 +108,16 @@ class MemberDataGenerator:
         Faker.seed(config["data"]["random_seed"])
         np.random.seed(config["data"]["random_seed"])
 
+        # Cluster setup
+        self.cluster_names = config["clusters"]["segment_names"]
+        self.cluster_probs = config["clusters"]["segment_probs"]
+        if not np.isclose(sum(self.cluster_probs), 1.0):
+            raise ValueError("Cluster probabilities must sum to 1")
+
+    def _get_cluster_config(self, cluster_name: str) -> dict:
+        """Get feature parameters for a specific cluster"""
+        return self.config["clusters"][cluster_name]
+
     def make_au_email(self, name: str) -> str:
         domains = self.config["email"]["domains"]
         username = name.lower().replace(" ", ".").replace("'", "").replace("-", "")
@@ -118,20 +128,29 @@ class MemberDataGenerator:
         n = n_member if n_member is not None else self.config["data"]["n_member"]
         data = []
         for _ in range(n):
-            age = generate_age(self.config)
-            balance = generate_balance(self.config)
-            num_accounts = generate_num_accounts(self.config)
-            last_login_days = generate_last_login_days(self.config)
+            # Assign to a cluster first
+            cluster_name = np.random.choice(self.cluster_names, p=self.cluster_probs)
+            cluster_config = self._get_cluster_config(cluster_name)
+
+            # Generate features using cluster-specific parameters
+            age = generate_age(cluster_config)
+            balance = generate_balance(cluster_config)
+            num_accounts = generate_num_accounts(cluster_config)
+            last_login_days = generate_last_login_days(
+                self.config
+            )  # Use global for non-clustered features
             satisfaction_score = generate_satisfaction_score(self.config)
-            profession = generate_profession(self.config)
+            profession = generate_profession(cluster_config)
             phase = generate_phase(self.config)
             gender = generate_gender(self.config)
             region = generate_region(self.config)
-            risk_profile = generate_risk_profile(self.config)
+            risk_profile = generate_risk_profile(cluster_config)
             contrib_freq = generate_contrib_freq(self.config)
             logins_per_month = generate_logins_per_month(self.config)
+
             name = self.fake.name()
             email = self.make_au_email(name)
+
             data.append(
                 {
                     "name": name,
@@ -148,8 +167,10 @@ class MemberDataGenerator:
                     "risk_profile": risk_profile,
                     "contrib_freq": contrib_freq,
                     "logins_per_month": logins_per_month,
+                    "true_segment": cluster_name,  # Ground truth for validation
                 }
             )
+
         return pd.DataFrame(data)
 
 
