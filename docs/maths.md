@@ -33,7 +33,7 @@ where the features may include, for example:
   x_j' = \frac{x_j - \mu_j}{\sigma_j}
   $$
   where $\mu_j$ and $\sigma_j$ are the mean and standard deviation of feature $j$.
-  
+
 - **Categorical features** are one-hot encoded:
   $$
   \text{e.g., Profession} = \begin{bmatrix}0 & 1 & 0 & 0 & 0\end{bmatrix}
@@ -120,6 +120,17 @@ $$
 - Each segment can be profiled by average feature values.
 - Segments inform tailored marketing, communications, and product design.
 - The number of clusters ($K$) is chosen based on business needs and evaluation metrics (e.g., silhouette score).
+
+## Sensitivity Analysis
+
+## Age Cohort Sensitivity Analysis
+
+To ensure the robustness of our clustering results to the choice of age cohort boundaries, we perform a sensitivity analysis. We systematically vary the boundaries of each age cohort by ±1 and ±2 years and re-run the clustering within each cohort. We then compare the resulting cluster assignments, sizes, and characteristics across these configurations. Stable results indicate that our findings are not artifacts of arbitrary age binning.
+
+## Fuzzy Clustering
+
+In addition to hard clustering, we apply fuzzy clustering (fuzzy c-means), which allows each member to have degrees of membership in multiple clusters. This approach reflects the reality that some individuals may not fit neatly into a single group. We present the membership matrix and visualize the cluster centers to aid interpretation.
+
 
 ---
 

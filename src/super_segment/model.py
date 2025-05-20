@@ -113,3 +113,76 @@ class SuperannuationSegmentationModel:
             hover_data=self.numeric_features + self.categorical_features,
         )
         return fig
+
+    def cohort_sensitivity_analysis(
+        self,
+        df: pd.DataFrame,
+        base_cohorts=None,
+        boundary_shifts=(-2, -1, 0, 1, 2),
+        min_cluster_size=10,
+        n_clusters=None,
+    ):
+        """
+        Perform sensitivity analysis by shifting age cohort boundaries and clustering within each cohort.
+        Returns a DataFrame with results for each shift and cohort.
+        """
+        if base_cohorts is None:
+            # Default: 18–29, 30–39, 40–49, 50–64, 65+
+            base_cohorts = [(18, 30), (30, 40), (40, 50), (50, 65), (65, 120)]
+        if n_clusters is None:
+            n_clusters = self.n_clusters
+
+        results = []
+        for shift in boundary_shifts:
+            # Shift all cohort boundaries
+            cohorts = [(low + shift, high + shift) for (low, high) in base_cohorts]
+            cohort_labels = np.full(len(df), -1)
+            cohort_stats = []
+            for i, (low, high) in enumerate(cohorts):
+                mask = (df["age"] >= low) & (df["age"] < high)
+                df_cohort = df[mask]
+                if len(df_cohort) < n_clusters or len(df_cohort) < min_cluster_size:
+                    cohort_stats.append(
+                        {
+                            "shift": shift,
+                            "cohort": f"{low}-{high}",
+                            "n_members": len(df_cohort),
+                            "silhouette": np.nan,
+                            "cluster_sizes": None,
+                        }
+                    )
+                    continue
+                try:
+                    X = self.preprocess(df_cohort)
+                    kmeans = KMeans(n_clusters=n_clusters, n_init=10, random_state=42)
+                    labels = kmeans.fit_predict(X)
+                    sil = silhouette_score(X, labels)
+                    cluster_sizes = (
+                        pd.Series(labels).value_counts().sort_index().tolist()
+                    )
+                    cohort_stats.append(
+                        {
+                            "shift": shift,
+                            "cohort": f"{low}-{high}",
+                            "n_members": len(df_cohort),
+                            "silhouette": sil,
+                            "cluster_sizes": cluster_sizes,
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Clustering failed for cohort {low}-{high} (shift {shift}): {e}"
+                    )
+                    cohort_stats.append(
+                        {
+                            "shift": shift,
+                            "cohort": f"{low}-{high}",
+                            "n_members": len(df_cohort),
+                            "silhouette": np.nan,
+                            "cluster_sizes": None,
+                        }
+                    )
+            results.extend(cohort_stats)
+
+        results_df = pd.DataFrame(results)
+        return results_df

@@ -1,7 +1,10 @@
+from pathlib import Path
+
 import duckdb
 import numpy as np
 import pandas as pd
 from faker import Faker
+from loguru import logger
 
 
 def generate_age(config) -> int:
@@ -151,22 +154,40 @@ class MemberDataGenerator:
 
 
 def get_or_generate_member_data(n_member, generator, config):
-    db_path = config["data"]["member_data_db_path"]
+    db_path = Path(config["data"]["member_data_db_path"])
     table = config["data"]["member_data_table"]
-    conn = duckdb.connect(db_path)
-    # Check if table exists
-    tables = conn.execute("SHOW TABLES").fetchall()
-    if (table,) in tables:
-        count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
-        if count >= n_member:
-            df = conn.execute(
-                f"SELECT * FROM {table} USING SAMPLE {n_member} ROWS"
-            ).df()
-            conn.close()
-            return df
-    # Otherwise, generate new data and store
-    df = generator.generate(n_member=n_member)
-    conn.execute(f"DROP TABLE IF EXISTS {table}")
-    conn.execute(f"CREATE TABLE {table} AS SELECT * FROM df")
-    conn.close()
-    return df
+
+    # Ensure the parent directory exists
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Using DuckDB database at {db_path.resolve()}.")
+
+    conn = duckdb.connect(str(db_path))
+    try:
+        # Check if table exists
+        tables = [row[0] for row in conn.execute("SHOW TABLES").fetchall()]
+        if table in tables:
+            count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            logger.info(f"Table '{table}' exists with {count} rows.")
+            if count >= n_member:
+                logger.info(
+                    f"Loading {n_member} members from cached DuckDB table '{table}'."
+                )
+                df = conn.execute(f"SELECT * FROM {table} LIMIT {n_member}").df()
+                return df
+            else:
+                logger.warning(
+                    f"Table '{table}' has insufficient rows ({count} < {n_member}); regenerating data."
+                )
+
+        # Otherwise, generate new data and store
+        logger.info(
+            f"Generating new member data and storing in DuckDB table '{table}'."
+        )
+        df = generator.generate(n_member=n_member)
+        conn.execute(f"DROP TABLE IF EXISTS {table}")
+        conn.execute(f"CREATE TABLE {table} AS SELECT * FROM df")
+        logger.success(f"Stored {n_member} members in DuckDB table '{table}'.")
+        return df
+    finally:
+        conn.close()
+        logger.debug("DuckDB connection closed.")

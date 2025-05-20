@@ -95,13 +95,14 @@ class SuperSegmentApp:
         with st.sidebar:
             self.sidebar_predict_form()
 
-        tab1, tab2, tab3, tab4, tab5, tab_readme = st.tabs(
+        tab1, tab2, tab3, tab4, tab5, tab6, tab_readme = st.tabs(
             [
                 "🧠 Cluster Training",
                 "🔍 Data Sample",
                 "📉 Pairwise plots",
                 "📊 Segment Distributions",
                 "📈 Cluster Visualisation",
+                "🧪 Cohort Sensitivity",
                 "📖 README",
             ]
         )
@@ -201,6 +202,36 @@ class SuperSegmentApp:
             else:
                 fig = model.visualise_clusters(st.session_state["data"])
                 st.plotly_chart(fig, use_container_width=True)
+
+        with tab6:
+            st.header("Age Cohort Sensitivity Analysis")
+            model = st.session_state["model"]
+            df = st.session_state["data"]
+
+            # Optionally allow user to configure cohorts and shifts
+            default_cohorts = [(18, 30), (30, 40), (40, 50), (50, 65), (65, 120)]
+            n_clusters = st.number_input("Clusters per cohort", 2, 8, model.n_clusters)
+            shifts = st.multiselect(
+                "Boundary Shifts (years)", [-2, -1, 0, 1, 2], default=[-2, -1, 0, 1, 2]
+            )
+
+            if st.button("Run Sensitivity Analysis"):
+                results_df = model.cohort_sensitivity_analysis(
+                    df,
+                    base_cohorts=default_cohorts,
+                    boundary_shifts=shifts,
+                    n_clusters=n_clusters,
+                )
+                st.session_state["sensitivity_results"] = results_df
+
+            if "sensitivity_results" in st.session_state:
+                results_df = st.session_state["sensitivity_results"]
+                st.dataframe(results_df)
+                st.subheader("Silhouette Scores by Shift and Cohort")
+                pivot = results_df.pivot(
+                    index="shift", columns="cohort", values="silhouette"
+                )
+                st.line_chart(pivot)
 
         with tab_readme:
             display_markdown_file(

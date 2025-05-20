@@ -1,5 +1,5 @@
 [data]
-n_member = 100_000
+n_member = 50_000
 random_seed = 42
 member_data_db_path = "data/member_data.duckdb"
 member_data_table = "members"
@@ -11,7 +11,7 @@ n_sample = 1_000
 mean = 40
 std = 10
 min = 25
-max = 65
+max = 85
 
 [balance]
 mean = 10
@@ -80,3 +80,15 @@ domains = [
 
 [readme]
 title = "# Superannuation Member Segmentation"
+
+[clustering]
+# Initial age cohort boundaries (inclusive lower, exclusive upper)
+age_cohorts = [[18, 30], [30, 40], [40, 50], [50, 65], [65, 85]]
+# Sensitivity window: how much to shift boundaries (in years)
+boundary_shifts = [-2, -1, 0, 1, 2]
+# Number of clusters to use within each cohort
+n_clusters = 3
+# Fuzzy clustering parameters
+fuzzy_m = 2.0
+fuzzy_max_iter = 300
+fuzzy_error = 1e-5
