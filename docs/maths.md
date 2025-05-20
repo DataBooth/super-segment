@@ -1,96 +1,127 @@
 # Model Summary
 
-## 1. **Logistic Regression Model**
+## 1. **KMeans Clustering Model**
 
-The model predicts the probability that a customer will churn (`churned = 1`) based on their features.  
-This is a **binary logistic regression**.
-
-### **Model Equation**
-
-Let:
-
-- $x_1$: Number of accounts
-- $x_2$: Days since last login
-- $x_3$: Satisfaction score
-- $x_4$: Age
-- $x_5$: Balance
-
-The **logit** (linear combination of features) is:
-
-$$
-\text{logit}(p) = \beta_0 + \beta_1 (x_1 - 1) + \beta_2 (x_2 - 90) + \beta_3 (x_3 - 3) + \beta_4 (x_4 - 40) + \beta_5 (x_5 - 50000)
-$$
-
-Where the coefficients (from your synthetic data generator) are:
-
-- $\beta_0 = 0 $$ (implicit, or can be added as an intercept)
-- $\beta_1 = 0.8 $$                                # effect of more accounts
-- $\beta_2 = 0.01 $$                              # effect of less engagement
-- $\beta_3 = -0.7 $$                              # higher satisfaction reduces churn
-- $\beta_4 = 0.015 $$                             # older age increases churn
-- $\beta_5 = 0.000005 $$                          # higher balance increases churn
-
-So, plugging in the values:
-
-$$
-\text{logit}(p) = 0.8(x_1 - 1) + 0.01(x_2 - 90) - 0.7(x_3 - 3) + 0.015(x_4 - 40) + 0.000005(x_5 - 50000)
-$$
-
-### **Probability Calculation**
-
-The probability of churn is then:
-
-$$
-p = \frac{1}{1 + e^{-\text{logit}(p)}}
-$$
-
-### **Scaling**
-
-To match the target churn rate (~19%), the probability is scaled:
-
-$$
-p_{\text{final}} = p \times 0.28
-$$
-
-### **Sampling**
-
-The churn label is generated as:
-
-$$
-\text{churned} = 
-\begin{cases}
-1 & \text{if } u < p_{\text{final}} \\
-0 & \text{otherwise}
-\end{cases}
-$$
-where $u \sim \text{Uniform}(0, 1)$.
+The segmentation model groups members into $K$ distinct segments based on their features, using the **KMeans clustering algorithm**.
 
 ---
 
-## 2. **Summary Table of Coefficients**
+### **Feature Vector**
 
-| Feature                | Symbol | Centered at | Coefficient | Effect on Churn    |
-|------------------------|--------|-------------|-------------|--------------------|
-| Number of accounts     | $x_1$| 1           | 0.8         | More accounts ↑    |
-| Days since last login  | $x_2$| 90          | 0.01        | Longer gap ↑       |
-| Satisfaction score     | $x_3$| 3           | -0.7        | Higher score ↓     |
-| Age                    | $x_4$| 40          | 0.015       | Older ↑            |
-| Balance                | $x_5$| 50,000      | 0.000005    | Higher balance ↑   |
+Each member is represented as a feature vector:
+
+$$
+\mathbf{x} = [x_1, x_2, ..., x_p]
+$$
+
+where the features may include, for example:
+
+- $x_1$: Age
+- $x_2$: Balance
+- $x_3$: Number of accounts
+- $x_4$: Days since last login
+- $x_5$: Satisfaction score
+- $x_6$: Logins per month
+- $x_7$ – $x_p$: One-hot encoded categorical features (e.g., profession, phase, gender, region, risk profile, contribution frequency)
 
 ---
 
-## 3. **Full Formula**
+### **Preprocessing**
+
+- **Numeric features** are standardised (zero mean, unit variance):
+  $$
+  x_j' = \frac{x_j - \mu_j}{\sigma_j}
+  $$
+  where $\mu_j$ and $\sigma_j$ are the mean and standard deviation of feature $j$.
+  
+- **Categorical features** are one-hot encoded:
+  $$
+  \text{e.g., Profession} = \begin{bmatrix}0 & 1 & 0 & 0 & 0\end{bmatrix}
+  $$
+  for "Primary Teacher" if the categories are ["High School Teacher", "Primary Teacher", ...].
+
+---
+
+### **KMeans Objective**
+
+Given $N$ members and $K$ clusters, KMeans finds cluster centroids $\boldsymbol{\mu}_1, ..., \boldsymbol{\mu}_K$ to minimise the total within-cluster variance:
 
 $$
-\boxed{
-p_{\text{final}} = 0.28 \times \frac{1}{1 + \exp\left(-\left[0.8(x_1-1) + 0.01(x_2-90) - 0.7(x_3-3) + 0.015(x_4-40) + 0.000005(x_5-50000)\right]\right)}
-}
+\text{Objective:} \qquad
+\min_{C_1,...,C_K} \sum_{k=1}^K \sum_{\mathbf{x}_i \in C_k} \|\mathbf{x}_i - \boldsymbol{\mu}_k\|^2
+$$
+
+where $C_k$ is the set of members assigned to cluster $k$ and $\boldsymbol{\mu}_k$ is the centroid (mean vector) of cluster $k$.
+
+---
+
+### **Cluster Assignment**
+
+Each member is assigned to the segment whose centroid is closest (Euclidean distance):
+
+$$
+\text{segment}(\mathbf{x}_i) = \arg\min_{k} \|\mathbf{x}_i - \boldsymbol{\mu}_k\|
 $$
 
 ---
 
-## 4. **Interpretation**
+## 2. **Model Evaluation**
 
-- Each feature is centered (subtracting a typical value) to make coefficients interpretable.
-- Positive coefficients increase churn probability; negative coefficients decrease it.
-- The scaling factor (0.28) is empirical, to match a realistic overall churn rate.
+### **Silhouette Score**
+
+The **silhouette score** measures how well each member fits within its segment compared to other segments:
+
+$$
+s = \frac{b - a}{\max(a, b)}
+$$
+
+- $a$ = mean intra-cluster distance (distance to members in the same cluster)
+- $b$ = mean nearest-cluster distance (distance to members in the nearest different cluster)
+- $s$ ranges from -1 (poor fit) to +1 (well clustered).
+
+---
+
+## 3. **Interpretation**
+
+- **Segments** represent groups of members with similar characteristics and behaviours.
+- **Cluster centroids** describe the "average" member in each segment.
+- **Segment profiles** can be used for targeted communications, product recommendations, and member engagement strategies.
+
+---
+
+## 4. **Summary Table of Features**
+
+| Feature                | Type         | Example Values                | Notes                          |
+|------------------------|-------------|-------------------------------|--------------------------------|
+| Age                    | Numeric      | 25–65                         | Standardised                   |
+| Balance                | Numeric      | \$20,000–\$300,000            | Standardised                   |
+| Number of accounts     | Numeric      | 1–4                           | Standardised                   |
+| Days since last login  | Numeric      | 1–180                         | Standardised                   |
+| Satisfaction score     | Numeric      | 1–5                           | Standardised                   |
+| Logins per month       | Numeric      | 0–20                          | Standardised                   |
+| Profession             | Categorical  | High School Teacher, etc.     | One-hot encoded                |
+| Phase                  | Categorical  | Accumulation, Retirement      | One-hot encoded                |
+| Gender                 | Categorical  | Male, Female                  | One-hot encoded                |
+| Region                 | Categorical  | NSW, VIC, QLD, WA, SA         | One-hot encoded                |
+| Risk profile           | Categorical  | Conservative, Moderate, Aggressive | One-hot encoded          |
+| Contribution frequency | Categorical  | Monthly, Quarterly, Yearly    | One-hot encoded                |
+
+---
+
+## 5. **Cluster Visualisation**
+
+- Clusters can be visualised in 2D using PCA or t-SNE projections.
+- Each point represents a member, coloured by segment.
+
+---
+
+## 6. **Interpretation for Business**
+
+- Each segment can be profiled by average feature values.
+- Segments inform tailored marketing, communications, and product design.
+- The number of clusters ($K$) is chosen based on business needs and evaluation metrics (e.g., silhouette score).
+
+---
+
+**Note:**  
+Unlike logistic regression, clustering does not yield explicit coefficients or probabilities, but instead finds natural groupings in the data based on all included features.

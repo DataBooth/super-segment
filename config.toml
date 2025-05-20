@@ -32,18 +32,40 @@ max = 180
 choices = [1, 2, 3, 4, 5]
 probabilities = [0.05, 0.10, 0.20, 0.35, 0.30]
 
-[churn_model]
-beta_num_accounts = 0.8
-center_num_accounts = 1
-beta_last_login_days = 0.01
-center_last_login_days = 90
-beta_satisfaction_score = -0.7
-center_satisfaction_score = 3
-beta_age = 0.015
-center_age = 40
-beta_balance = 0.000005
-center_balance = 50000
-scaling_factor = 0.28
+[profession]
+choices = [
+    "High School Teacher",
+    "Primary Teacher",
+    "Admin",
+    "TAFE Instructor",
+    "Principal"
+]
+probabilities = [0.4, 0.3, 0.1, 0.1, 0.1]
+
+[phase]
+choices = ["Accumulation", "Retirement"]
+probabilities = [0.7, 0.3]
+
+[gender]
+choices = ["Male", "Female"]
+probabilities = [0.45, 0.55]
+
+[region]
+choices = ["NSW", "VIC", "QLD", "WA", "SA"]
+probabilities = [0.35, 0.25, 0.18, 0.12, 0.10]
+
+[risk_profile]
+choices = ["Conservative", "Moderate", "Aggressive"]
+probabilities = [0.3, 0.5, 0.2]
+
+[contrib_freq]
+choices = ["Monthly", "Quarterly", "Yearly"]
+probabilities = [0.7, 0.2, 0.1]
+
+[logins_per_month]
+mean = 2
+min = 0
+max = 20
 
 [email]
 domains = [
@@ -57,4 +79,4 @@ domains = [
 ]
 
 [readme]
-title = "# Superannuation Churn Predictor"
+title = "# Superannuation Member Segmentation"

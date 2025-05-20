@@ -1,20 +1,20 @@
-import matplotlib.pyplot as plt
-from millify import millify
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
 import streamlit as st
 
-from super_churn.config import load_config
-from super_churn.data_generation import MemberDataGenerator
-from super_churn.datastore import get_or_generate_member_data
-from super_churn.model import SuperannuationChurnModel
-from super_churn.utils import display_markdown_file
+from super_segment.config import load_config
+from super_segment.data_generation import (
+    MemberDataGenerator,
+    get_or_generate_member_data,
+)
 
-# --- App Class ---
+# from super_segment.datastore import get_or_generate_member_data
+from super_segment.model import SuperannuationSegmentationModel
+from super_segment.utils import display_markdown_file
 
 
-class SuperChurnApp:
+class SuperSegmentApp:
     def __init__(self):
         self.config = load_config()
         self.data_generator = MemberDataGenerator(self.config)
@@ -29,20 +29,37 @@ class SuperChurnApp:
         if "data" not in st.session_state:
             st.session_state["data"] = self.get_synthetic_data(self.config)
         if "model" not in st.session_state:
-            st.session_state["model"] = SuperannuationChurnModel()
+            st.session_state["model"] = SuperannuationSegmentationModel()
         if "fit_stats" not in st.session_state:
             st.session_state["fit_stats"] = None
 
     def sidebar_predict_form(self):
-        st.header("Predict Churn for a New Customer")
+        st.header("Predict Segment for a Member")
         with st.form("predict_form"):
-            age = st.slider("Age", 25, 65, 40)
-            last_login_days = st.slider("Days Since Last Login", 1, 180, 30)
-            balance = st.number_input("Balance", 20000, 300000, 50000, step=1000)
+            age = st.slider("Age", 25, 70, 40)
+            balance = st.number_input("Balance", 5000, 900000, 120000, step=1000)
             num_accounts = st.selectbox("Number of Accounts", [1, 2, 3, 4], index=0)
+            last_login_days = st.slider("Days Since Last Login", 1, 180, 30)
             satisfaction_score = st.selectbox(
                 "Satisfaction Score", [1, 2, 3, 4, 5], index=2
             )
+            profession = st.selectbox(
+                "Profession",
+                [
+                    "High School Teacher",
+                    "Primary Teacher",
+                    "Admin",
+                    "TAFE Instructor",
+                    "Principal",
+                ],
+            )
+            phase = st.selectbox("Phase", ["Accumulation", "Retirement"])
+            gender = st.selectbox("Gender", ["Male", "Female"])
+            region = st.selectbox("Region", ["NSW", "VIC", "QLD", "WA", "SA"])
+            risk_profile = st.selectbox(
+                "Risk Profile", ["Conservative", "Moderate", "Aggressive"]
+            )
+            logins_per_month = st.slider("Logins per Month", 0, 20, 2)
             submitted = st.form_submit_button("Predict")
         if submitted:
             input_data = {
@@ -51,21 +68,28 @@ class SuperChurnApp:
                 "num_accounts": num_accounts,
                 "last_login_days": last_login_days,
                 "satisfaction_score": satisfaction_score,
+                "profession": profession,
+                "phase": phase,
+                "gender": gender,
+                "region": region,
+                "risk_profile": risk_profile,
+                "logins_per_month": logins_per_month,
             }
             model = st.session_state["model"]
             if model.is_trained:
-                prob = model.predict_proba(input_data)
-                st.write(f"**Predicted churn probability:** {prob:.2%}")
-                st.write("**Prediction:**", "Churn" if prob > 0.5 else "No Churn")
+                segment = model.predict_segment(input_data)
+                st.write(f"**Predicted Segment:** {segment}")
             else:
-                st.warning("Please train the model first on the 'Model Training' tab.")
+                st.warning(
+                    "Please train the segmentation model first on the 'Cluster Training' tab."
+                )
 
     def run(self):
-        st.set_page_config(page_title="Superannuation Churn Predictor", layout="wide")
-        st.header("Superannuation Member Churn Predictor")
-        st.metric(
-            label="Number of members:", value=millify(self.config["data"]["n_member"])
+        st.set_page_config(
+            page_title="Superannuation Member Segmentation", layout="wide"
         )
+        st.header("Superannuation Member Segmentation Explorer")
+        st.metric(label="Number of members:", value=self.config["data"]["n_member"])
         self.setup_session_state()
 
         with st.sidebar:
@@ -73,30 +97,27 @@ class SuperChurnApp:
 
         tab1, tab2, tab3, tab4, tab5, tab_readme = st.tabs(
             [
-                "🧠 Model Training",
+                "🧠 Cluster Training",
                 "🔍 Data Sample",
                 "📉 Pairwise plots",
-                "📊 Data Distributions",
-                "📈 Model Fit Visualisation",
+                "📊 Segment Distributions",
+                "📈 Cluster Visualisation",
                 "📖 README",
             ]
         )
 
         with tab1:
-            # st.header("Fit the Model and View Metrics")
             stats = st.session_state["model"].train(st.session_state["data"])
             st.session_state["fit_stats"] = stats
-            st.toast("Model trained!")
+            st.toast("Segmentation model trained!")
             if st.session_state["fit_stats"]:
                 st.metric(
-                    "Model Accuracy", float(st.session_state["fit_stats"]["accuracy"])
+                    label="Silhouette Score",
+                    value=f"{float(st.session_state['fit_stats']['silhouette']):.2f}",
+                    help="Silhouette Score measures how well members fit within their segment (ranges from -1 to 1; higher is better for clustering quality).",
                 )
-
-                st.subheader("Classification Report")
-                report_dict = st.session_state["fit_stats"]["report"]
-                report_df = pd.DataFrame(report_dict).transpose()
-                report_df = report_df.apply(pd.to_numeric, errors="coerce")
-                st.dataframe(report_df.style.format("{:.2f}"))
+                st.subheader("Cluster Sizes")
+                st.dataframe(st.session_state["fit_stats"]["cluster_sizes"])
                 display_markdown_file("docs/metrics.md")
 
         with tab2:
@@ -108,7 +129,6 @@ class SuperChurnApp:
             )
 
         with tab3:
-            # Select the numerical features you want to include
             pairwise_features_default = [
                 "age",
                 "balance",
@@ -120,42 +140,35 @@ class SuperChurnApp:
                 "Select features for pairwise interaction plot:",
                 options=pairwise_features_default,
                 default=pairwise_features_default,
-                help="Choose which features to show in the scatterplot matrix.",
             )
-
             backend = self.config["data"].get("pairplot_backend", "seaborn")
             max_sample = self.config["data"].get("max_pairplot_sample", 1000)
             df = st.session_state["data"].sample(
                 min(len(st.session_state["data"]), max_sample)
             )
-
-            # st.header("🔗 Pairwise Plots")
-
             if backend == "seaborn":
                 fig = sns.pairplot(
-                    df[pairwise_features + ["churned"]], hue="churned", diag_kind="hist"
+                    df[pairwise_features + ["segment"]], hue="segment", diag_kind="hist"
                 )
                 st.pyplot(fig)
             else:
                 fig = px.scatter_matrix(
                     df,
                     dimensions=pairwise_features,
-                    color="churned",
-                    symbol="churned",
+                    color="segment",
+                    symbol="segment",
                     title="Scatter Matrix of Member Data",
                     labels={
                         col: col.replace("_", " ").title()
-                        for col in pairwise_features + ["churned"]
+                        for col in pairwise_features + ["segment"]
                     },
                     height=800,
                 )
-                fig.update_traces(
-                    diagonal_visible=False
-                )  # Optionally hide the diagonal
+                fig.update_traces(diagonal_visible=False)
                 st.plotly_chart(fig, use_container_width=True)
 
         with tab4:
-            st.header("Feature Distributions")
+            st.header("Feature Distributions by Segment")
             df = st.session_state["data"]
             numeric_features = [
                 "age",
@@ -168,67 +181,26 @@ class SuperChurnApp:
                 st.subheader(
                     f"Distribution of {feature.replace('_', ' ').capitalize()}"
                 )
-                if feature in ["num_accounts", "satisfaction_score"]:
-                    fig = px.histogram(
-                        df,
-                        x=feature,
-                        title=f"{feature.replace('_', ' ').capitalize()} Distribution",
-                    )
-                    fig.update_xaxes(
-                        type="category",
-                        categoryorder="total descending",
-                    )
-                else:
-                    fig = px.histogram(
-                        df,
-                        x=feature,
-                        nbins=30,
-                        title=f"{feature.replace('_', ' ').capitalize()} Distribution",
-                    )
+                fig = px.histogram(
+                    df,
+                    x=feature,
+                    color="segment",
+                    barmode="group",
+                    nbins=30,
+                    title=f"{feature.replace('_', ' ').capitalize()} Distribution by Segment",
+                )
                 st.plotly_chart(fig, use_container_width=True)
 
         with tab5:
-            st.header("Model Fit Visualisation")
-            display_markdown_file("docs/maths.md")
+            st.header("Cluster Visualisation (e.g., PCA/t-SNE)")
             model = st.session_state["model"]
             if not model.is_trained:
-                st.warning("Please train the model first on the 'Model Training' tab.")
+                st.warning(
+                    "Please train the segmentation model first on the 'Cluster Training' tab."
+                )
             else:
-                residuals_df = model.get_residuals_df()
-                # Residuals vs Predicted plot
-                fig_residuals = px.scatter(
-                    residuals_df,
-                    x="Predicted",
-                    y="Residual",
-                    title="Residuals vs Predicted Values",
-                    labels={
-                        "Predicted": "Predicted Churn (0 or 1)",
-                        "Residual": "Residual (Actual - Predicted)",
-                    },
-                    trendline="ols",
-                )
-                fig_residuals.add_hline(y=0, line_dash="dash", line_color="red")
-                st.plotly_chart(fig_residuals, use_container_width=True)
-                # Actual vs Predicted plot
-                fig_actual_pred = px.scatter(
-                    residuals_df,
-                    x="Actual",
-                    y="Predicted",
-                    title="Actual vs Predicted Churn",
-                    labels={
-                        "Actual": "Actual Churn (0 or 1)",
-                        "Predicted": "Predicted Churn (0 or 1)",
-                    },
-                )
-                fig_actual_pred.add_shape(
-                    type="line",
-                    x0=0,
-                    y0=0,
-                    x1=1,
-                    y1=1,
-                    line=dict(color="red", dash="dash"),
-                )
-                st.plotly_chart(fig_actual_pred, use_container_width=True)
+                fig = model.visualise_clusters(st.session_state["data"])
+                st.plotly_chart(fig, use_container_width=True)
 
         with tab_readme:
             display_markdown_file(
@@ -239,5 +211,5 @@ class SuperChurnApp:
 # --- Run the App ---
 
 if __name__ == "__main__":
-    app = SuperChurnApp()
+    app = SuperSegmentApp()
     app.run()

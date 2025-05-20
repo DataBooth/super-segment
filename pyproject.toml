@@ -1,7 +1,7 @@
 [project]
-name = "super-churn"
+name = "super-segment"
 version = "0.1.0"
-description = "Super member churn predictor"
+description = "Super member segmentation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
