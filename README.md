@@ -1,38 +1,121 @@
-# Superannuation Churn Predictor
+# Superannuation Member Segmentation Project
 
-A Streamlit web application that generates synthetic superannuation customer data, trains a churn prediction model, allows interactive predictions, visualises data distributions, and demonstrates model fit quality.
+## Overview
 
-
-- [Superannuation Churn Predictor](#superannuation-churn-predictor)
-  - [Features](#features)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-  - [Usage](#usage)
-  - [Data Documentation](#data-documentation)
-    - [Data Generation Process](#data-generation-process)
-      - [Example Generation Logic](#example-generation-logic)
-    - [Data Schema](#data-schema)
-      - [Sample Data](#sample-data)
-    - [Data Usage](#data-usage)
-    - [Data Limitations](#data-limitations)
-    - [Customisation](#customisation)
-  - [Project Structure](#project-structure)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Contact](#contact)
+This project provides a comprehensive framework for segmenting superannuation fund members using both rule-based and machine learning approaches. It includes synthetic data generation, model development, and an interactive Streamlit web application for exploring and visualising segmentation results. The aim is to help super funds better understand, engage, and serve their members—whether in the accumulation or retirement phase—while upholding ethical and legal standards.
 
 ---
 
-## Features
+## Objectives
 
-- **Synthetic Data Generation:** Uses the [Faker](https://faker.readthedocs.io/) library to create realistic, privacy-safe customer records.
-- **Model Training:** Trains a logistic regression model to predict customer churn.
-- **Interactive Prediction:** Enter customer features and receive churn probability predictions.
-- **Tabbed Interface:** Explore data, train the model, make predictions, visualise distributions, view model diagnostics, and read project documentation.
-- **Object-Oriented Design:** All logic is encapsulated in Python classes for maintainability and clarity.
-- **Logging:** Uses [Loguru](https://loguru.readthedocs.io/) for clear, informative logs.
-- **Caching:** Synthetic data generation is cached for performance.
+- Identify and analyse meaningful member segments to support targeted communications, product recommendations, and proactive member support.
+- Compare rule-based and algorithmic segmentation methods, using clear evaluation metrics.
+- Provide an interactive interface for fund analysts and stakeholders to explore segments, test new member profiles, and visualise key patterns.
+- Ensure compliance with Australian Privacy Principles (APPs) and ethical best practices throughout.
+
+---
+
+## Key Features
+
+- **Synthetic Data Generation:**  
+  Create semi-realistic member datasets including demographic, behavioural, and psychographic features relevant to superannuation.
+- **Multiple Segmentation Approaches:**  
+  - Rule-based (e.g., by age, phase, balance)
+  - Model-based (e.g., K-Means, hierarchical clustering)
+- **Evaluation Metrics:**  
+  Silhouette score, cluster interpretability, and business actionability.
+- **Streamlit App:**  
+  - Visualise segment profiles and distributions
+  - Compare segmentation methods
+  - Profile new or hypothetical members
+  - Download segment summaries for reporting
+- **Ethical and Legal Compliance:**  
+  Designed to align with the Australian Privacy Principles and industry ethical standards.
+
+---
+
+## Folder Structure
+
+```
+superannuation-segmentation/
+│
+├── data/
+│   └── synthetic_members.csv
+├── src/
+│   ├── data_generation.py
+│   ├── segmentation_models.py
+│   ├── evaluation.py
+│   └── utils.py
+├── app/
+│   └── streamlit_app.py
+├── README.md
+└── requirements.txt
+```
+
+---
+
+## Data Description
+
+Synthetic member data includes:
+- Age, gender, profession (e.g., high school teacher, admin)
+- Account balance, number of accounts
+- Super phase (accumulation or retirement)
+- Contribution frequency, satisfaction score, risk profile
+- Digital engagement (logins, last login days)
+- Region (state/territory)
+
+All data is generated to reflect plausible distributions and correlations typical in the Australian superannuation sector.
+
+---
+
+## Modelling Approaches
+
+### Rule-Based Segmentation
+
+- Define segments using business logic (e.g., age bands, phase, balance quartiles).
+- Useful for transparency and alignment with fund strategy.
+
+### Model-Based Segmentation
+
+- **K-Means Clustering:** Finds natural groupings in the data based on selected features.
+- **Hierarchical Clustering:** Builds a tree of segments for more granular analysis.
+- **Gaussian Mixture Models (optional):** For probabilistic/soft segmentation.
+
+### Evaluation
+
+- **Silhouette Score:** Measures how well-defined the clusters are.
+- **Interpretability:** Are segments meaningful and actionable for the fund?
+- **Business Usefulness:** Can segments support specific communications or interventions?
+
+---
+
+## Streamlit Application
+
+- **Segment Explorer:**  
+  Visualise clusters, segment sizes, and average characteristics.
+- **Method Comparison:**  
+  Switch between rule-based and model-based segmentations.
+- **Member Profiler:**  
+  Enter or simulate member details to see predicted segment and suggested actions.
+- **Download Reports:**  
+  Export segment summaries for further analysis.
+
+---
+
+## Ethical and Legal Considerations
+
+- **Australian Privacy Principles (APPs):**  
+  Data collection, processing, and use are designed to comply with APPs, especially regarding transparency, consent, data minimisation, and member access rights.
+- **Fairness and Non-Discrimination:**  
+  Segmentation avoids reinforcing stereotypes or unfairly excluding groups. Regular bias checks are recommended.
+- **Transparency:**  
+  The app provides clear explanations of how segmentation works, why members are grouped as they are, and what actions may result.
+- **Data Quality:**  
+  Recognises that behavioural data (e.g., digital engagement) may be sparse for many members. Models are designed to avoid overfitting or overinterpreting limited signals.
+- **Inclusivity:**  
+  Segmentation is designed to benefit all members, including those with low engagement or in vulnerable situations.
+
+For more detail on ethical considerations and APP compliance, see the [Ethics and Privacy](#ethics-and-privacy) section below.
 
 ---
 
@@ -40,152 +123,82 @@ A Streamlit web application that generates synthetic superannuation customer dat
 
 ### Prerequisites
 
-- Python 3.11+
-- `uv`
-
+- Python 3.9+
+- pip (for dependencies)
+- Streamlit
 
 ### Installation
 
-1. **Clone the repository:**
+```bash
+git clone https://github.com/your-org/superannuation-segmentation.git
+cd superannuation-segmentation
+pip install -r requirements.txt
+```
+
+### Running the App
 
 ```bash
-git clone https://github.com/yourusername/superannuation-churn-predictor.git
-cd superannuation-churn-predictor
+streamlit run app/streamlit_app.py
 ```
-
-2. **Install dependencies:**
-
-```bash
-uv sync
-```
-
-See **`pyproject.toml`** which includes:
-
-```
-streamlit
-pandas
-numpy
-scikit-learn
-faker
-loguru
-plotly
-statsmodels
-watchdog
-```
-
 
 ---
 
-## Usage
+## Customisation
 
-1. **Run the Streamlit app:**
-
-```bash
-streamlit run app/main.py
-```
-
-2. **Navigate the app:**
-    - **Data Sample Tab:** Preview a sample of the generated synthetic data.
-    - **Model Training Tab:** Train the churn prediction model and review its accuracy and classification metrics.
-    - **Predict Churn Tab:** Input customer features and get a churn probability and prediction.
-    - **Data Distributions Tab:** Explore distributions of all numerical features.
-    - **Model Fit Visualisation Tab:** See residual and actual-vs-predicted plots to assess model fit.
-    - **Readme Tab:** View this documentation within the app.
+- Adjust synthetic data parameters in `src/data_generation.py` to better reflect your fund’s member base.
+- Add or remove features in `segmentation_models.py` as needed.
+- Update business rules for rule-based segmentation in `segmentation_models.py`.
+- Extend the Streamlit interface in `app/streamlit_app.py` for additional visualisations or export options.
 
 ---
 
-## Data Documentation
+## Ethics and Privacy
 
-### Data Generation Process
+This project is designed with strict adherence to the Australian Privacy Principles (APPs):
 
-- **Library:** [Faker](https://faker.readthedocs.io/) is used to create realistic names and emails.
-- **Randomisation:** `NumPy` is used to generate numerical features within realistic ranges for Australian superannuation members.
-- **Churn Label:** The `churned` field is assigned based on a simple rule, simulating members likely to leave the fund.
+- **Open and Transparent Management (APP 1):**  
+  The app includes a clear privacy notice and documentation.
+- **Collection and Notification (APPs 3 & 5):**  
+  Only necessary data is generated and used, with clear documentation on purpose.
+- **Use and Disclosure (APP 6):**  
+  Data is used solely for segmentation and member support purposes.
+- **Security (APP 11):**  
+  Synthetic data is used for demonstration; in production, ensure robust security for member data.
+- **Access and Correction (APP 12):**  
+  Members (or test users) can review and correct their data in the app interface.
 
-
-#### Example Generation Logic
-
-```python
-age = np.random.randint(25, 66)
-balance = np.random.randint(20000, 300001)
-num_accounts = np.random.randint(1, 5)
-last_login_days = np.random.randint(1, 181)
-satisfaction_score = np.random.randint(1, 6)
-churned = int((num_accounts > 2) or (last_login_days > 60) or (satisfaction_score < 3))
-```
-
-
-### Data Schema
-
-| Column | Type | Description |
-| :-- | :-- | :-- |
-| name | string | Synthetic full name |
-| email | string | Synthetic email address |
-| age | int | Age of the member (25-65) |
-| balance | int | Superannuation account balance (AUD 20,000–300,000) |
-| num_accounts | int | Number of super accounts held (1–4) |
-| last_login_days | int | Days since last online account login (1–180) |
-| satisfaction_score | int | Last member satisfaction survey score (1–5) |
-| churned | int | 1 = member churned (left fund), 0 = remained |
-
-#### Sample Data
-
-| name | email | age | balance | num_accounts | last_login_days | satisfaction_score | churned |
-| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| John Smith | john.smith@fake.com | 35 | 55000 | 2 | 30 | 3 | 0 |
-| Jane Doe | jane.doe@fake.com | 52 | 210000 | 1 | 5 | 5 | 0 |
-| Michael Brown | michael.brown@fake.com | 47 | 120000 | 3 | 90 | 2 | 1 |
-
-### Data Usage
-
-- **Model Training:** Used to train machine learning models for churn prediction.
-- **Exploration:** Supports data analysis and visualisation in the Streamlit app.
-- **Demonstration:** Enables safe, privacy-compliant demonstration of ML workflows.
-
-
-### Data Limitations
-
-- **Synthetic:** All data is randomly generated and does not reflect real individuals.
-- **Simplified Logic:** Churn assignment is based on a basic rule for demonstration, not real-world behavior.
-- **No PII Risk:** Names and emails are fake; no real customer data is used.
-
-
-### Customisation
-
-You can adjust the data generator to:
-
-- Add new features (e.g., employer, location, investment choice).
-- Change value ranges for different scenarios.
-- Implement more complex churn logic or introduce randomness.
+**Note:** When adapting for real member data, ensure all privacy, consent, and ethical requirements are fully met.
 
 ---
 
-## Project Structure
+## References
 
-```
-superannuation-churn-predictor/
-│
-├── app.py               # Main Streamlit application
-├── README.md            # Project documentation (this file)
-├── requirements.txt     # Python dependencies
-└── (Optional: src/)     # For additional modules/classes if you modularise further
-```
-
+- [The psychology of super fund member segmentation][6]
+- [Australian Privacy Principles – OAIC](https://www.oaic.gov.au/privacy/australian-privacy-principles)
+- [Customer segmentation templates and guides][3][4][5]
 
 ---
-
-## Contributing
-
-Pull requests and suggestions are welcome! Please open an issue or submit a PR.
-
-## License
-
-[MIT License](LICENSE)
 
 ## Contact
 
-For questions or support, please contact [michael@databooth.com.au](mailto:michael@databooth.com.au).
+For questions, suggestions, or contributions, please raise an issue or contact the project maintainer.
 
 ---
 
-*This synthetic dataset and app are intended solely for demonstration and educational purposes. They should not be used for production or to model real-world superannuation behaviour without further validation and enhancement.*
+*This project is for educational and demonstration purposes.*
+
+---
+
+[6]: https://www.fssuper.com.au/article/the-psychology-of-super-fund-member-segmentation  
+[3]: https://www.slideteam.net/blog/top-10-customer-segmentation-templates-with-samples-and-examples  
+[4]: https://boardmix.com/articles/market-segmentation-example/  
+[5]: https://www.ayoa.com/templates/market-segmentation-template/
+
+Citations:
+[1] https://github.com/stevehoober254/customer_segmentation/blob/main/README.md
+[2] https://github.com/Suwarti/Customer-Segmentation/blob/main/README.md
+[3] https://www.slideteam.net/blog/top-10-customer-segmentation-templates-with-samples-and-examples
+[4] https://boardmix.com/articles/market-segmentation-example/
+[5] https://www.ayoa.com/templates/market-segmentation-template/
+[6] https://www.fssuper.com.au/article/the-psychology-of-super-fund-member-segmentation
+[7] https://www.youtube.com/watch?v=SRr0tlUJjcw
