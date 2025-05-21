@@ -3,20 +3,25 @@ name = "super-segment"
 version = "0.1.0"
 description = "Super member segmentation"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.9,<3.13"
 dependencies = [
-    "duckdb>=1.2.2",
-    "faker>=37.3.0",
-    "loguru>=0.7.3",
-    "matplotlib>=3.10.3",
-    "millify>=0.1.1",
-    "pandas>=2.2.3",
-    "plotly>=6.1.0",
-    "scikit-learn>=1.6.1",
-    "seaborn>=0.13.2",
-    "statsmodels>=0.14.4",
-    "streamlit>=1.45.1",
-    "watchdog>=6.0.0",
+    "dagster",
+    "dagster-webserver",
+    "duckdb",
+    "faker",
+    "hydra-core",
+    "ibis-framework[duckdb]>=10.5.0",
+    "logfire>=3.16.0",
+    "loguru",
+    "matplotlib",
+    "millify",
+    "pandas",
+    "plotly",
+    "scikit-learn",
+    "seaborn",
+    "statsmodels",
+    "streamlit",
+    "watchdog",
 ]
 
 [dependency-groups]

@@ -1,0 +1,72 @@
+age:
+  mean: 40
+  std: 10
+  min: 25
+  max: 85
+
+balance:
+  mean: 10
+  sigma: 0.7
+  min: 20000
+  max: 300000
+
+num_accounts:
+  choices: [1, 2, 3, 4]
+  probabilities: [0.63, 0.25, 0.09, 0.03]
+
+last_login_days:
+  scale: 90
+  min: 1
+  max: 180
+
+satisfaction_score:
+  choices: [1, 2, 3, 4, 5]
+  probabilities: [0.05, 0.10, 0.20, 0.35, 0.30]
+
+profession:
+  choices:
+    [
+      "High School Teacher",
+      "Primary Teacher",
+      "Admin",
+      "TAFE Instructor",
+      "Principal",
+    ]
+  probabilities: [0.4, 0.3, 0.1, 0.1, 0.1]
+
+phase:
+  choices: ["Accumulation", "Retirement"]
+  probabilities: [0.7, 0.3]
+
+gender:
+  choices: ["Male", "Female"]
+  probabilities: [0.45, 0.55]
+
+region:
+  choices: ["NSW", "VIC", "QLD", "WA", "SA"]
+  probabilities: [0.35, 0.25, 0.18, 0.12, 0.10]
+
+risk_profile:
+  choices: ["Conservative", "Moderate", "Aggressive"]
+  probabilities: [0.3, 0.5, 0.2]
+
+contrib_freq:
+  choices: ["Monthly", "Quarterly", "Yearly"]
+  probabilities: [0.7, 0.2, 0.1]
+
+logins_per_month:
+  mean: 2
+  min: 0
+  max: 20
+
+email:
+  domains:
+    [
+      "gmail.com",
+      "yahoo.com.au",
+      "outlook.com",
+      "bigpond.com",
+      "hotmail.com",
+      "optusnet.com.au",
+      "icloud.com",
+    ]
