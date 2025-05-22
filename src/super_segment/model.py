@@ -8,18 +8,15 @@ import pandas as pd
 import plotly.express as px
 from loguru import logger
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from streamlit import spinner, success
 
 
 def compute_data_hash(df: pd.DataFrame) -> str:
-    """
-    Returns a hex digest hash for the entire DataFrame contents.
-    """
-    # Hash the data (including index)
+    """Returns a hex digest hash for the entire DataFrame contents."""
     row_hashes = pd.util.hash_pandas_object(df, index=True).values
-    # Combine all row hashes into a single hash
     m = hashlib.sha256()
     m.update(row_hashes.tobytes())
     return m.hexdigest()
@@ -27,7 +24,7 @@ def compute_data_hash(df: pd.DataFrame) -> str:
 
 def get_or_train_model(
     data,
-    model_path="model.pkl",
+    model_path="data/model.pkl",
     n_clusters=4,
     use_age_cohort=False,
     force_retrain=False,
@@ -46,7 +43,7 @@ def get_or_train_model(
         else:
             logger.info("Cached model metadata mismatch; retraining.")
     # Train and save new model
-    model = SuperannuationSegmentationModel()
+    model = SuperannuationSegmentationModel(n_clusters=n_clusters)
     fit_stats = model.train(data)
     save_model_with_metadata(model, data, model_path, fit_stats)
     _, metadata, _ = load_model_with_metadata(model_path)
@@ -58,6 +55,7 @@ def save_model_with_metadata(model, data, model_path, fit_stats=None):
         "n_member": len(data),
         "train_time": datetime.datetime.now().isoformat(),
         "data_hash": compute_data_hash(data),
+        "n_clusters": getattr(model, "n_clusters", None),
     }
     with open(model_path, "wb") as f:
         pickle.dump({"model": model, "metadata": metadata, "fit_stats": fit_stats}, f)
@@ -75,7 +73,6 @@ class SuperannuationSegmentationModel:
     """
 
     def __init__(self, n_clusters=4):
-        # You can adjust features as needed
         self.numeric_features = [
             "age",
             "balance",
@@ -90,7 +87,6 @@ class SuperannuationSegmentationModel:
             "gender",
             "region",
             "risk_profile",
-            "contrib_freq",
         ]
         self.n_clusters = n_clusters
         self.kmeans = None
@@ -100,15 +96,11 @@ class SuperannuationSegmentationModel:
         self.feature_columns = None
 
     def preprocess(self, df: pd.DataFrame):
-        # Scale numeric, one-hot categorical, concatenate
         X_num = df[self.numeric_features].copy()
         X_cat = df[self.categorical_features].copy()
-
-        # Fit/transform scaler and encoder if not already
         if self.scaler is None:
             self.scaler = StandardScaler().fit(X_num)
         X_num_scaled = self.scaler.transform(X_num)
-
         if self.encoder is None:
             self.encoder = OneHotEncoder(
                 sparse_output=False, handle_unknown="ignore"
@@ -117,13 +109,12 @@ class SuperannuationSegmentationModel:
                 self.encoder.get_feature_names_out(self.categorical_features)
             )
         X_cat_encoded = self.encoder.transform(X_cat)
-
         X = np.hstack([X_num_scaled, X_cat_encoded])
         return X
 
     def train(self, df: pd.DataFrame) -> dict:
         with spinner(
-            f"Training segmentation model on {len(df)} members. Please wait..."
+            f"Training segmentation model on {len(df):,} members. Please wait..."
         ):
             X = self.preprocess(df)
             self.kmeans = KMeans(n_clusters=self.n_clusters, n_init=10, random_state=42)
@@ -131,16 +122,14 @@ class SuperannuationSegmentationModel:
             df["segment"] = cluster_labels
             sil = silhouette_score(X, cluster_labels)
             self.is_trained = True
-            # Save cluster sizes for reporting
             cluster_sizes = pd.Series(cluster_labels).value_counts().sort_index()
-        success("Segmentation model trained!")
-        return {
-            "silhouette": sil,
-            "cluster_sizes": cluster_sizes,
-        }
+            success("Segmentation model trained!")
+            return {
+                "silhouette": sil,
+                "cluster_sizes": cluster_sizes,
+            }
 
     def predict_segment(self, input_data: dict) -> int:
-        # Accepts a dict of member features, returns predicted segment
         df_input = pd.DataFrame([input_data])
         X = self.preprocess(df_input)
         segment = int(self.kmeans.predict(X)[0])
@@ -148,16 +137,12 @@ class SuperannuationSegmentationModel:
         return segment
 
     def add_segments(self, df: pd.DataFrame) -> pd.DataFrame:
-        # Assigns segments to the input DataFrame
         X = self.preprocess(df)
         df = df.copy()
         df["segment"] = self.kmeans.predict(X)
         return df
 
     def visualise_clusters(self, df: pd.DataFrame):
-        # Visualise clusters using PCA for dimensionality reduction
-        from sklearn.decomposition import PCA
-
         X = self.preprocess(df)
         pca = PCA(n_components=2)
         X_pca = pca.fit_transform(X)
@@ -183,27 +168,18 @@ class SuperannuationSegmentationModel:
         min_cluster_size=10,
         n_clusters=None,
     ):
-        """
-        Perform sensitivity analysis by shifting age cohort boundaries and clustering within each cohort.
-        Returns a DataFrame with results for each shift and cohort.
-        """
         if base_cohorts is None:
-            # Default: 18–29, 30–39, 40–49, 50–64, 65+
             base_cohorts = [(18, 30), (30, 40), (40, 50), (50, 65), (65, 120)]
         if n_clusters is None:
             n_clusters = self.n_clusters
-
         results = []
         for shift in boundary_shifts:
-            # Shift all cohort boundaries
             cohorts = [(low + shift, high + shift) for (low, high) in base_cohorts]
-            cohort_labels = np.full(len(df), -1)
-            cohort_stats = []
             for i, (low, high) in enumerate(cohorts):
                 mask = (df["age"] >= low) & (df["age"] < high)
                 df_cohort = df[mask]
                 if len(df_cohort) < n_clusters or len(df_cohort) < min_cluster_size:
-                    cohort_stats.append(
+                    results.append(
                         {
                             "shift": shift,
                             "cohort": f"{low}-{high}",
@@ -221,7 +197,7 @@ class SuperannuationSegmentationModel:
                     cluster_sizes = (
                         pd.Series(labels).value_counts().sort_index().tolist()
                     )
-                    cohort_stats.append(
+                    results.append(
                         {
                             "shift": shift,
                             "cohort": f"{low}-{high}",
@@ -234,7 +210,7 @@ class SuperannuationSegmentationModel:
                     logger.warning(
                         f"Clustering failed for cohort {low}-{high} (shift {shift}): {e}"
                     )
-                    cohort_stats.append(
+                    results.append(
                         {
                             "shift": shift,
                             "cohort": f"{low}-{high}",
@@ -243,7 +219,5 @@ class SuperannuationSegmentationModel:
                             "cluster_sizes": None,
                         }
                     )
-            results.extend(cohort_stats)
-
         results_df = pd.DataFrame(results)
         return results_df

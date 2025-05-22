@@ -1,0 +1,46 @@
+# conf/ui.yaml
+
+sidebar:
+  age:
+    min: 20
+    max: 90
+    default: 45
+  balance:
+    min: 5000
+    max: 900000
+    default: 120000
+    step: 1000
+  num_accounts:
+    options: [1, 2, 3, 4]
+    default: 1
+  last_login_days:
+    min: 1
+    max: 180
+    default: 30
+  satisfaction_score:
+    options: [1, 2, 3, 4, 5]
+    default: 3
+  profession:
+    options:
+      - High School Teacher
+      - Primary Teacher
+      - Admin
+      - TAFE Instructor
+      - Principal
+    default: High School Teacher
+  gender:
+    options: [Male, Female, Non-binary]
+    default: Male
+  region:
+    options: [ACT, NSW, QLD, NT, SA, TAS, VIC, WA]
+    default: NSW
+  phase:
+    options: [Accumulation, Retirement]
+    default: Accumulation
+  risk_profile:
+    options: [Conservative, Moderate, Aggressive]
+    default: Moderate
+  logins_per_month:
+    min: 0
+    max: 20
+    default: 2

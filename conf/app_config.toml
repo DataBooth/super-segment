@@ -1,0 +1,6 @@
+[app]
+title = "Super Segment App"
+description = "Explore and cluster superannuation members."
+
+[sub_config]
+files = ["ui.toml", "generate.toml"]

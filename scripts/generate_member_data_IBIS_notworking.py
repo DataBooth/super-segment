@@ -229,7 +229,7 @@ def main(cfg: DictConfig):
     output_file = config["data"].get("output_file", "data/members.parquet")
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_file)
-    logfire.info(f"Saved members.parquet", path=output_file)
+    logfire.info(f"Saved {config['data']['']} members.parquet", path=output_file)
     print(f"Generated {len(df)} members and saved to {output_file}")
 
 

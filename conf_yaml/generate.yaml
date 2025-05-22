@@ -1,6 +1,6 @@
 data:
   n_member: 1_000
-  random_seed: 123
+  random_seed: 42
   member_data_db_path: data/member_data.duckdb
   member_data_table: members
   output_file: data/members.parquet

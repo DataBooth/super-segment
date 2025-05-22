@@ -1,0 +1,54 @@
+[sidebar.age]
+min = 20
+max = 90
+default = 45
+
+[sidebar.balance]
+min = 5000
+max = 900000
+default = 120000
+step = 1000
+
+[sidebar.num_accounts]
+options = [1, 2, 3, 4]
+default = 1
+
+[sidebar.last_login_days]
+min = 1
+max = 180
+default = 30
+
+[sidebar.satisfaction_score]
+options = [1, 2, 3, 4, 5]
+default = 3
+
+[sidebar.profession]
+options = [
+    "High School Teacher",
+    "Primary Teacher",
+    "Admin",
+    "TAFE Instructor",
+    "Principal"
+]
+default = "High School Teacher"
+
+[sidebar.gender]
+options = ["Male", "Female", "Non-binary"]
+default = "Male"
+
+[sidebar.region]
+options = ["ACT", "NSW", "QLD", "NT", "SA", "TAS", "VIC", "WA"]
+default = "NSW"
+
+[sidebar.phase]
+options = ["Accumulation", "Retirement"]
+default = "Accumulation"
+
+[sidebar.risk_profile]
+options = ["Conservative", "Moderate", "Aggressive"]
+default = "Moderate"
+
+[sidebar.logins_per_month]
+min = 0
+max = 20
+default = 2

@@ -1,0 +1,85 @@
+from pathlib import Path
+from pprint import pprint
+
+import toml
+
+
+def find_project_root(marker="pyproject.toml"):
+    """Recursively search parent directories for the project root marker file."""
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        if (current / marker).exists():
+            return current
+        current = current.parent
+    raise FileNotFoundError(f"Could not find project root (missing {marker})")
+
+
+class AppConfig:
+    def __init__(self, main_path="app_config.toml", conf_dir="conf"):
+        # If conf_dir is absolute, use it; otherwise, anchor to project root
+        conf_dir_path = Path(conf_dir)
+        if not conf_dir_path.is_absolute():
+            project_root = find_project_root()
+            self.conf_dir = project_root / conf_dir_path
+        else:
+            self.conf_dir = conf_dir_path
+
+        main_path = Path(main_path)
+        if not main_path.is_absolute():
+            self.main_path = self.conf_dir / main_path
+        else:
+            self.main_path = main_path
+
+        self.config = self._load_toml(self.main_path)
+        self.sub_configs = {}
+        self._load_sub_configs()
+
+    def _load_toml(self, path):
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path.resolve()}")
+        return toml.load(path)
+
+    def _load_sub_configs(self):
+        sub_files = self.config.get("sub_config", {}).get("files", [])
+        for fname in sub_files:
+            fpath = (
+                self.conf_dir / fname if not Path(fname).is_absolute() else Path(fname)
+            )
+            key = Path(fname).stem
+            self.sub_configs[key] = self._load_toml(fpath)
+
+    def get(self, *keys, sub_name=None, default=None):
+        """
+        Get a value from the main config (if sub_name=None) or a sub-config.
+        Usage:
+            config.get("app", "title")  # from main config
+            config.get("sidebar", "age", "min", sub_name="ui")  # from ui.toml
+        """
+        conf = self.config if sub_name is None else self.sub_configs.get(sub_name, {})
+        for k in keys:
+            if isinstance(conf, dict) and k in conf:
+                conf = conf[k]
+            else:
+                return default
+        return conf
+
+    def as_dict(self):
+        out = dict(self.config)
+        for k, v in self.sub_configs.items():
+            out[k] = v
+        return out
+
+    def debug_print(self):
+        pprint(self.as_dict())
+
+
+# Example usage:
+if __name__ == "__main__":
+    config = AppConfig()
+    config.debug_print()
+    print()
+    print(f"App title: {config.get('app', 'title')}")
+    print("-" * 60)
+    print(config.get("ui", "sidebar", "age", "min"))
+    pprint(config.sub_configs["ui"]["sidebar"])
