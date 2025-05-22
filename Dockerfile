@@ -8,7 +8,7 @@ WORKDIR /app
 # Create a non-root user
 RUN useradd -m appuser
 
-# Copy pyproject.toml/uv.lock first for better cache
+# Copy pyproject.toml first for better cache
 COPY pyproject.toml pyproject.toml
 
 # Create the venv as root so permissions are correct
@@ -27,8 +27,11 @@ USER appuser
 # Install dependencies (from lock file)
 RUN uv sync --no-dev
 
-# Copy rest of your code (as appuser)
-COPY --chown=appuser:appuser . .
+# Copy application code, config, and data (as appuser for correct permissions)
+COPY --chown=appuser:appuser app app
+COPY --chown=appuser:appuser conf conf
+COPY --chown=appuser:appuser data data
+COPY --chown=appuser:appuser README.md .
 
 # Install your local package (editable or normal)
 RUN uv pip install -e .
