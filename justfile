@@ -60,10 +60,9 @@ docker-push tag="latest" registry="":
     docker push {{registry}}/{{image_name}}:{{tag}}
 
 
-# Generate member data
-# just generate-member-data n_member=10000 force_generate=true
-generate-member-data n_member="10000" force_generate="false":
-    python scripts/generate_member_data.py data.n_member={{n_member}} data.force_generate={{force_generate}}
+# Generate member data using config from TOML (edit conf/app_config.toml as needed)
+generate-member-data:
+    python scripts/generate_member_data.py
 
     
 # Transform and query with Ibis/DuckDB
@@ -98,3 +97,9 @@ pipeline:
 # # Show pipeline status in Dagster UI
 # status:
 #     dagster job list
+
+
+# Remove all .pyc files and __pycache__ directories
+clean-pyc:
+    find . -name "*.pyc" -delete
+    find . -name "__pycache__" -type d -exec rm -rf {} +

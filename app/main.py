@@ -5,6 +5,32 @@ import duckdb
 from super_segment.model import get_or_train_model
 from super_segment.utils import display_markdown_file
 from super_segment.app_config import AppConfig
+import datetime
+
+def format_train_time(train_time_str):
+    # Parse the timestamp (assuming ISO format, e.g., '2025-05-27T08:35:00')
+    train_time = datetime.datetime.fromisoformat(train_time_str)
+    now = datetime.datetime.now(train_time.tzinfo) if train_time.tzinfo else datetime.datetime.now()
+    delta = now - train_time
+
+    # Format date as "Mon 27 May 2025 8:35AM"
+    formatted_date = train_time.strftime("%a %d %b %Y %-I:%M%p")
+
+    # Format "xx hours ago" or "yy days ago"
+    if delta.days >= 2:
+        ago = f"{delta.days} days ago"
+    elif delta.days == 1:
+        ago = "yesterday"
+    elif delta.seconds >= 7200:
+        ago = f"{delta.seconds // 3600} hours ago"
+    elif delta.seconds >= 3600:
+        ago = "an hour ago"
+    elif delta.seconds >= 120:
+        ago = f"{delta.seconds // 60} minutes ago"
+    else:
+        ago = "just now"
+
+    return f"**Model last trained: {formatted_date} ({ago})**"
 
 
 class SuperSegmentApp:
@@ -159,6 +185,10 @@ class SuperSegmentApp:
         st.metric(
             label="Number of members (model):", value=f"{model_metadata['n_member']:,}"
         )
+        model_train_info = st.empty()
+        model_train_info.markdown(
+            format_train_time(st.session_state['model_metadata']['train_time'])
+        )
         with st.sidebar:
             self.sidebar_predict_form()
 
@@ -175,25 +205,28 @@ class SuperSegmentApp:
         )
 
         with tab1:
-            n_clusters = st.number_input(
-                "Number of clusters", min_value=2, max_value=12, value=4
-            )
-            if st.button("Train Model"):
-                model, metadata, fit_stats = get_or_train_model(
-                    st.session_state["data_full"], n_clusters=n_clusters
+            col1, col2, _ = st.columns([1, 1, 1], gap="large")
+            with col2:
+                n_clusters = st.slider(
+                    "Number of groups (clusters)", min_value=2, max_value=6, value=4
                 )
-                st.session_state["model"] = model
-                st.session_state["model_metadata"] = metadata
-                st.session_state["fit_stats"] = fit_stats
-                df = st.session_state["data_full"]
-                n_member_train = metadata["n_member"]
-                if "unique_id" in df.columns:
-                    df = df.sort_values("unique_id")
-                st.session_state["data"] = df.iloc[:n_member_train].copy()
-                st.info(
-                    f"Model last trained: {st.session_state['model_metadata']['train_time']}"
-                )
-                st.toast("Segmentation model trained!")
+            with col1:
+                if st.button("Train Model"):
+                    model, metadata, fit_stats = get_or_train_model(
+                        st.session_state["data_full"], n_clusters=n_clusters
+                    )
+                    st.session_state["model"] = model
+                    st.session_state["model_metadata"] = metadata
+                    st.session_state["fit_stats"] = fit_stats
+                    df = st.session_state["data_full"]
+                    n_member_train = metadata["n_member"]
+                    if "unique_id" in df.columns:
+                        df = df.sort_values("unique_id")
+                    st.session_state["data"] = df.iloc[:n_member_train].copy()
+                    model_train_info.markdown(
+                        format_train_time(st.session_state['model_metadata']['train_time'])
+                    )
+                    st.toast("Segmentation model trained!")
             if st.session_state["fit_stats"]:
                 st.metric(
                     label="Silhouette Score",

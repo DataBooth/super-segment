@@ -1,8 +1,6 @@
 from pathlib import Path
 from pprint import pprint
-
 import toml
-
 
 def find_project_root(marker="pyproject.toml"):
     """Recursively search parent directories for the project root marker file."""
@@ -12,7 +10,6 @@ def find_project_root(marker="pyproject.toml"):
             return current
         current = current.parent
     raise FileNotFoundError(f"Could not find project root (missing {marker})")
-
 
 class AppConfig:
     def __init__(self, main_path="app_config.toml", conf_dir="conf"):
@@ -49,20 +46,34 @@ class AppConfig:
             key = Path(fname).stem
             self.sub_configs[key] = self._load_toml(fpath)
 
-    def get(self, *keys, sub_name=None, default=None):
+    def get(self, *keys, sub_name=None, default=None, verbose=False):
         """
         Get a value from the main config (if sub_name=None) or a sub-config.
+        If verbose=True, echo where the parameter was sourced from.
         Usage:
-            config.get("app", "title")  # from main config
-            config.get("sidebar", "age", "min", sub_name="ui")  # from ui.toml
+            config.get("app", "title", verbose=True)  # from main config
+            config.get("sidebar", "age", "min", sub_name="ui", verbose=True)  # from ui.toml
         """
         conf = self.config if sub_name is None else self.sub_configs.get(sub_name, {})
+        source = self.main_path if sub_name is None else self.sub_configs.get(sub_name, None)
+        found = True
         for k in keys:
             if isinstance(conf, dict) and k in conf:
                 conf = conf[k]
             else:
-                return default
-        return conf
+                found = False
+                break
+        if verbose:
+            key_path = " -> ".join(keys)
+            if found:
+                if sub_name is None:
+                    print(f"[AppConfig] '{key_path}' found in MAIN config ({self.main_path})")
+                else:
+                    print(f"[AppConfig] '{key_path}' found in SUB-CONFIG '{sub_name}' ({self.conf_dir / (sub_name + '.toml')})")
+            else:
+                print(f"[AppConfig] '{key_path}' NOT FOUND in {'MAIN' if sub_name is None else 'SUB-CONFIG ' + sub_name}; using default: {default!r}")
+        return conf if found else default
+
 
     def as_dict(self):
         out = dict(self.config)
@@ -72,7 +83,6 @@ class AppConfig:
 
     def debug_print(self):
         pprint(self.as_dict())
-
 
 # Example usage:
 if __name__ == "__main__":

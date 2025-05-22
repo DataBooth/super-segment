@@ -1,5 +1,5 @@
 [data]
-n_member = 1000
+n_member = 10_000
 random_seed = 42
 member_data_db_path = "data/member_data.duckdb"
 member_data_table = "members"
@@ -32,7 +32,14 @@ choices = [1, 2, 3, 4, 5]
 probabilities = [0.05, 0.1, 0.2, 0.4, 0.25]
 
 [profession]
-choices = ["Engineer", "Teacher", "Nurse", "Artist", "Scientist"]
+choices = [
+    "High School Teacher",
+    "Primary Teacher",
+    "Admin",
+    "TAFE Instructor",
+    "Principal",
+    "Infants Teacher"
+]
 probabilities = [0.3, 0.2, 0.2, 0.1, 0.2]
 
 [phase]

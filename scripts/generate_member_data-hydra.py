@@ -1,12 +1,12 @@
 from pathlib import Path
 
 import duckdb
+import hydra
 import numpy as np
 import pyarrow as pa
 from faker import Faker
 from loguru import logger
-
-from super_segment.app_config import AppConfig
+from omegaconf import DictConfig, OmegaConf
 
 
 def make_au_email(name, domains):
@@ -162,37 +162,36 @@ def write_members_to_parquet(data: list, output_file: str):
     logger.success(f"Generated {len(data)} members and saved to {output_file}")
 
 
-def main():
-    config = AppConfig()
-    generate_config = config.sub_configs["generate"]
-
-    n_row = generate_config["data"]["n_member"]
-    seed = generate_config["data"]["random_seed"]
-    output_file = generate_config["data"]["output_file"]
-    force_generate = generate_config["data"]["force_generate"]
+@hydra.main(version_base=None, config_path="../conf", config_name="config")
+def hydra_main(cfg: DictConfig):
+    config = OmegaConf.to_container(cfg, resolve=True)
+    n = config["data"]["n_member"]
+    seed = config["data"].get("random_seed", 42)
+    output_file = config["data"].get("output_file", "data/members.parquet")
+    force_generate = config["data"].get("force_generate", False)
 
     logger.info(
-        f"Requested n_member={n_row}, output_file={output_file}, force_generate={force_generate}"
+        f"Requested n_member={n}, output_file={output_file}, force_generate={force_generate}"
     )
 
     existing_rows = count_parquet_rows(output_file)
-    if existing_rows >= n_row and not force_generate:
+    if existing_rows >= n and not force_generate:
         logger.info(
-            f"{output_file} already exists with {existing_rows} rows (>= {n_row}); skipping generation."
+            f"{output_file} already exists with {existing_rows} rows (>= {n}); skipping generation."
         )
         return
     elif existing_rows > 0:
         logger.info(
-            f"{output_file} exists but has only {existing_rows} rows (< {n_row}); regenerating."
+            f"{output_file} exists but has only {existing_rows} rows (< {n}); regenerating."
         )
 
     Faker.seed(seed)
     np.random.seed(seed)
 
-    generator = MemberDataGenerator(generate_config)
-    data = generator.generate(n_row)
+    generator = MemberDataGenerator(config)
+    data = generator.generate(n)
     write_members_to_parquet(data, output_file)
 
 
 if __name__ == "__main__":
-    main()
+    hydra_main()

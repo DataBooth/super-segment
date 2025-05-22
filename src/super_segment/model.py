@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from streamlit import spinner, success
+from streamlit import spinner
 
 
 def compute_data_hash(df: pd.DataFrame) -> str:
@@ -123,7 +123,6 @@ class SuperannuationSegmentationModel:
             sil = silhouette_score(X, cluster_labels)
             self.is_trained = True
             cluster_sizes = pd.Series(cluster_labels).value_counts().sort_index()
-            success("Segmentation model trained!")
             return {
                 "silhouette": sil,
                 "cluster_sizes": cluster_sizes,
