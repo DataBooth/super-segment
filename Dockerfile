@@ -34,7 +34,7 @@ COPY --chown=appuser:appuser data data
 COPY --chown=appuser:appuser README.md .
 
 # Install your local package (editable or normal)
-RUN uv pip install -e .
+# RUN uv pip install -e . (already happened in uv sync)
 
 # EXPOSE 8501
 
