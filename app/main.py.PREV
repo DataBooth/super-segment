@@ -1,37 +1,33 @@
-import ibis.backends
-import ibis.backends.duckdb
-import ibis.streamlit
-import streamlit as st
+import pandas as pd
 import plotly.express as px
 import seaborn as sns
-import ibis
+import streamlit as st
 
+from super_segment.config import load_config
+from super_segment.data_generation import (
+    MemberDataGenerator,
+    get_or_generate_member_data,
+)
 
-from super_segment.hydra_conf import load_hydra_conf
-
+# from super_segment.datastore import get_or_generate_member_data
 from super_segment.model import SuperannuationSegmentationModel
 from super_segment.utils import display_markdown_file
 
 
 class SuperSegmentApp:
     def __init__(self):
-        self.config = load_hydra_conf()
+        self.config = load_config()
+        self.data_generator = MemberDataGenerator(self.config)
         self.model = None
 
-    # @st.cache_data(show_spinner="Loading member data from Parquet with Ibis...")
-    def get_ibis_data(self):
-        parquet_path = self.config.data.output_file
-        con = ibis.connect(
-            "duckdb://penguins.ddb"
-        )  # Read the Parquet file as an Ibis table (uses DuckDB backend by default)
-        t = con.read_parquet(parquet_path, table_name="members")
-        # Convert to pandas DataFrame
-        df = t.to_pandas()
-        return df
+    @st.cache_data(show_spinner="Generating synthetic data...")
+    def get_synthetic_data(_self, config: dict) -> pd.DataFrame:
+        generator = MemberDataGenerator(config)
+        return generator.generate()
 
     def setup_session_state(self):
         if "data" not in st.session_state:
-            st.session_state["data"] = self.get_ibis_data()
+            st.session_state["data"] = self.get_synthetic_data(self.config)
         if "model" not in st.session_state:
             st.session_state["model"] = SuperannuationSegmentationModel()
         if "fit_stats" not in st.session_state:
@@ -93,7 +89,7 @@ class SuperSegmentApp:
             page_title="Superannuation Member Segmentation", layout="wide"
         )
         st.header("Superannuation Member Segmentation Explorer")
-        st.metric(label="Number of members:", value=self.config.data.n_member)
+        st.metric(label="Number of members:", value=self.config["data"]["n_member"])
         self.setup_session_state()
 
         with st.sidebar:
@@ -126,7 +122,7 @@ class SuperSegmentApp:
                 display_markdown_file("docs/metrics.md")
 
         with tab2:
-            n_sample = self.config.data.get("n_sample", 20)
+            n_sample = self.config["data"]["n_sample"]
             st.subheader(f"Sample of Synthetic Member Data: {n_sample} rows")
             st.dataframe(
                 st.session_state["data"].sample(n_sample),
@@ -146,8 +142,8 @@ class SuperSegmentApp:
                 options=pairwise_features_default,
                 default=pairwise_features_default,
             )
-            backend = self.config.data.get("pairplot_backend", "seaborn")
-            max_sample = self.config.data.get("max_pairplot_sample", 1000)
+            backend = self.config["data"].get("pairplot_backend", "seaborn")
+            max_sample = self.config["data"].get("max_pairplot_sample", 1000)
             df = st.session_state["data"].sample(
                 min(len(st.session_state["data"]), max_sample)
             )
@@ -212,6 +208,7 @@ class SuperSegmentApp:
             model = st.session_state["model"]
             df = st.session_state["data"]
 
+            # Optionally allow user to configure cohorts and shifts
             default_cohorts = [(18, 30), (30, 40), (40, 50), (50, 65), (65, 120)]
             n_clusters = st.number_input("Clusters per cohort", 2, 8, model.n_clusters)
             shifts = st.multiselect(
@@ -238,7 +235,7 @@ class SuperSegmentApp:
 
         with tab_readme:
             display_markdown_file(
-                "README.md", remove_title=getattr(self.config.readme, "title", None)
+                "README.md", remove_title=self.config["readme"]["title"]
             )
 
 

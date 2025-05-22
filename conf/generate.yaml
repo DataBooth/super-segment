@@ -1,2 +1,86 @@
-n_members: 20000
-output_file: data/members.parquet
+data:
+  n_member: 100_000
+  random_seed: 123
+  member_data_db_path: data/member_data.duckdb
+  member_data_table: members
+  output_file: data/members.parquet
+  force_generate: False
+
+age:
+  mean: 40
+  std: 10
+  min: 18
+  max: 80
+
+balance:
+  mean: 10
+  sigma: 0.5
+  min: 100
+  max: 100000
+
+num_accounts:
+  choices: [1, 2, 3]
+  probabilities: [0.7, 0.2, 0.1]
+
+last_login_days:
+  scale: 30
+  min: 0
+  max: 180
+
+satisfaction_score:
+  choices: [1, 2, 3, 4, 5]
+  probabilities: [0.05, 0.1, 0.2, 0.4, 0.25]
+
+profession:
+  choices: ["Engineer", "Teacher", "Nurse", "Artist", "Scientist"]
+  probabilities: [0.3, 0.2, 0.2, 0.1, 0.2]
+
+phase:
+  choices: ["Growth", "Mature", "Decline"]
+  probabilities: [0.4, 0.5, 0.1]
+
+gender:
+  choices: ["Male", "Female", "Other"]
+  probabilities: [0.48, 0.5, 0.02]
+
+region:
+  choices: ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"]
+  probabilities: [0.3, 0.25, 0.2, 0.1, 0.07, 0.03, 0.03, 0.02]
+
+risk_profile:
+  choices: ["Low", "Medium", "High"]
+  probabilities: [0.5, 0.4, 0.1]
+
+contrib_freq:
+  choices: ["Monthly", "Quarterly", "Annually"]
+  probabilities: [0.7, 0.2, 0.1]
+
+logins_per_month:
+  mean: 3
+  min: 0
+  max: 30
+
+email:
+  domains: ["example.com", "test.com", "mail.com"]
+
+clusters:
+  segment_names: ["YoungUrban", "FamilySaver", "Retiree"]
+  segment_probs: [0.4, 0.4, 0.2]
+  YoungUrban:
+    age: { mean: 28, std: 4, min: 18, max: 35 }
+    balance: { mean: 8, sigma: 0.7, min: 100, max: 20000 }
+    num_accounts: { choices: [1, 2], probabilities: [0.9, 0.1] }
+    profession: { choices: ["Engineer", "Artist"], probabilities: [0.8, 0.2] }
+    risk_profile: { choices: ["High", "Medium"], probabilities: [0.7, 0.3] }
+  FamilySaver:
+    age: { mean: 42, std: 6, min: 30, max: 55 }
+    balance: { mean: 10, sigma: 0.5, min: 1000, max: 50000 }
+    num_accounts: { choices: [2, 3], probabilities: [0.6, 0.4] }
+    profession: { choices: ["Teacher", "Nurse"], probabilities: [0.5, 0.5] }
+    risk_profile: { choices: ["Medium", "Low"], probabilities: [0.6, 0.4] }
+  Retiree:
+    age: { mean: 67, std: 3, min: 60, max: 80 }
+    balance: { mean: 11, sigma: 0.3, min: 10000, max: 100000 }
+    num_accounts: { choices: [1, 2], probabilities: [0.7, 0.3] }
+    profession: { choices: ["Scientist"], probabilities: [1.0] }
+    risk_profile: { choices: ["Low"], probabilities: [1.0] }

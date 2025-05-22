@@ -8,9 +8,11 @@ app:
     streamlit run app/main.py
 
 
-# Generate synthetic member data
-generate-member-data n_member="1000":
-    python scripts/generate_member_data.py 
+# Generate member data
+# just generate-member-data n_member=10000 force_generate=true
+generate-member-data n_member="10000" force_generate="false":
+    python scripts/generate_member_data.py data.n_member={{n_member}} data.force_generate={{force_generate}}
+
     
 # Transform and query with Ibis/DuckDB
 transform-members:
@@ -22,24 +24,25 @@ pipeline:
     just transform-members
 
 
-# -------- Dagster ----------
-# Generate member data (on demand)
-generate-members:
-    dagster asset materialize -m member_data_pipeline.member_data_pipeline --select generate_members
+# -------- Dagster ---------- NOT WORKING
+
+# # Generate member data (on demand)
+# generate-members:
+#     dagster asset materialize -m member_data_pipeline.member_data_pipeline --select generate_members
 
 
-# Run the full pipeline (materialize all assets except generate_members) - "+" means downstream of members_df
-run-pipeline:
-    dagster asset materialize --select members_df+  
+# # Run the full pipeline (materialize all assets except generate_members) - "+" means downstream of members_df
+# run-pipeline:
+#     dagster asset materialize --select members_df+  
 
-# Optionally, run everything including generate_members (rarely needed)
-full-refresh:
-    dagster asset materialize --select generate_members,members_df+
+# # Optionally, run everything including generate_members (rarely needed)
+# full-refresh:
+#     dagster asset materialize --select generate_members,members_df+
 
-# Open Dagster UI for interactive runs
-dagster-ui:
-    dagster dev
+# # Open Dagster UI for interactive runs
+# dagster-ui:
+#     dagster dev
 
-# Show pipeline status in Dagster UI
-status:
-    dagster job list
+# # Show pipeline status in Dagster UI
+# status:
+#     dagster job list
