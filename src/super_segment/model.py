@@ -1,11 +1,60 @@
+import datetime
+import hashlib
+import pickle
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
+import plotly.express as px
+from loguru import logger
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from loguru import logger
-import numpy as np
-import plotly.express as px
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from streamlit import spinner, success
+
+
+def compute_data_hash(df: pd.DataFrame) -> str:
+    """
+    Returns a hex digest hash for the entire DataFrame contents.
+    """
+    # Hash the data (including index)
+    row_hashes = pd.util.hash_pandas_object(df, index=True).values
+    # Combine all row hashes into a single hash
+    m = hashlib.sha256()
+    m.update(row_hashes.tobytes())
+    return m.hexdigest()
+
+
+def get_or_train_model(data, model_path="data/model.pkl", force_retrain=False):
+    if Path(model_path).exists() and not force_retrain:
+        model, metadata, fit_stats = load_model_with_metadata(model_path)
+        if metadata["n_member"] == len(data):
+            logger.info(f"Loaded cached model (trained {metadata['train_time']})")
+            return model, metadata, fit_stats
+        else:
+            logger.info("Cached model data size mismatch; retraining.")
+    # Train and save new model
+    model = SuperannuationSegmentationModel()
+    fit_stats = model.train(data)
+    save_model_with_metadata(model, data, model_path, fit_stats)
+    _, metadata, _ = load_model_with_metadata(model_path)
+    return model, metadata, fit_stats
+
+
+def save_model_with_metadata(model, data, model_path, fit_stats=None):
+    metadata = {
+        "n_member": len(data),
+        "train_time": datetime.datetime.now().isoformat(),
+        "data_hash": compute_data_hash(data),
+    }
+    with open(model_path, "wb") as f:
+        pickle.dump({"model": model, "metadata": metadata, "fit_stats": fit_stats}, f)
+
+
+def load_model_with_metadata(model_path):
+    with open(model_path, "rb") as f:
+        obj = pickle.load(f)
+    return obj["model"], obj["metadata"], obj.get("fit_stats")
 
 
 class SuperannuationSegmentationModel:

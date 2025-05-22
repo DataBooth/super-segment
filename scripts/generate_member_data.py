@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import duckdb
@@ -16,8 +15,8 @@ def make_au_email(name, domains):
     return f"{username}@{domain}"
 
 
-def count_parquet_rows(parquet_path):
-    if not os.path.exists(parquet_path):
+def count_parquet_rows(parquet_path: str) -> int:
+    if not Path(parquet_path).exists():
         return 0
     con = duckdb.connect()
     try:
@@ -30,64 +29,21 @@ def count_parquet_rows(parquet_path):
         con.close()
 
 
-@hydra.main(version_base=None, config_path="../conf", config_name="config")
-def main(cfg: DictConfig):
-    config = OmegaConf.to_container(cfg, resolve=True)
-    n_row = config["data"]["n_member"]
-    seed = config["data"].get("random_seed", 42)
-    output_file = config["data"].get("output_file", "data/members.parquet")
-    force_generate = config["data"].get("force_generate", False)
+class MemberDataGenerator:
+    def __init__(self, config: dict):
+        self.config = config
+        self.fake = Faker()
+        Faker.seed(config["data"]["random_seed"])
+        np.random.seed(config["data"]["random_seed"])
+        self.cluster_names = config["clusters"]["segment_names"]
+        self.cluster_probs = config["clusters"]["segment_probs"]
+        self.clusters = config["clusters"]
+        self.email_domains = config["email"]["domains"]
 
-    logger.info(
-        f"Requested n_member={n_row}, output_file={output_file}, force_generate={force_generate}"
-    )
+    def generate_member(self) -> dict:
+        cluster_name = np.random.choice(self.cluster_names, p=self.cluster_probs)
+        cluster_config = self.clusters[cluster_name]
 
-    # Check for existing file and row count
-    existing_rows = count_parquet_rows(output_file)
-    if existing_rows >= n_row and not force_generate:
-        logger.info(
-            f"{output_file} already exists with {existing_rows} rows (>= {n_row}); skipping generation."
-        )
-        return
-    elif existing_rows > 0:
-        logger.info(
-            f"{output_file} exists but has only {existing_rows} rows (< {n_row}); regenerating."
-        )
-
-    Faker.seed(seed)
-    np.random.seed(seed)
-    fake = Faker()
-
-    logger.info("Starting member data generation...")
-
-    # Preallocate arrays/lists
-    names = [None] * n_row
-    emails = [None] * n_row
-    ages = np.empty(n_row, dtype=int)
-    balances = np.empty(n_row, dtype=float)
-    num_accounts = np.empty(n_row, dtype=int)
-    last_login_days = np.empty(n_row, dtype=int)
-    satisfaction_scores = np.empty(n_row, dtype=int)
-    professions = [None] * n_row
-    phases = [None] * n_row
-    genders = [None] * n_row
-    regions = [None] * n_row
-    risk_profiles = [None] * n_row
-    contrib_freqs = [None] * n_row
-    logins_per_month = np.empty(n_row, dtype=int)
-    true_segments = [None] * n_row
-
-    cluster_names = config["clusters"]["segment_names"]
-    cluster_probs = config["clusters"]["segment_probs"]
-    clusters = config["clusters"]
-    email_domains = config["email"]["domains"]
-
-    for i in range(n_row):
-        # Pick cluster
-        cluster_name = np.random.choice(cluster_names, p=cluster_probs)
-        cluster_config = clusters[cluster_name]
-
-        # Generate features
         age = int(
             np.clip(
                 np.random.normal(
@@ -98,6 +54,7 @@ def main(cfg: DictConfig):
                 cluster_config["age"]["max"],
             )
         )
+
         balance = int(
             np.random.lognormal(
                 mean=cluster_config["balance"]["mean"],
@@ -107,101 +64,134 @@ def main(cfg: DictConfig):
         balance = np.clip(
             balance, cluster_config["balance"]["min"], cluster_config["balance"]["max"]
         )
-        n_acc = np.random.choice(
+
+        num_accounts = np.random.choice(
             cluster_config["num_accounts"]["choices"],
             p=cluster_config["num_accounts"]["probabilities"],
         )
-        last_login = int(
+
+        last_login_days = int(
             np.clip(
-                np.random.exponential(scale=config["last_login_days"]["scale"]),
-                config["last_login_days"]["min"],
-                config["last_login_days"]["max"],
+                np.random.exponential(scale=self.config["last_login_days"]["scale"]),
+                self.config["last_login_days"]["min"],
+                self.config["last_login_days"]["max"],
             )
         )
-        satisfaction = np.random.choice(
-            config["satisfaction_score"]["choices"],
-            p=config["satisfaction_score"]["probabilities"],
+
+        satisfaction_score = np.random.choice(
+            self.config["satisfaction_score"]["choices"],
+            p=self.config["satisfaction_score"]["probabilities"],
         )
+
         profession = np.random.choice(
             cluster_config["profession"]["choices"],
             p=cluster_config["profession"]["probabilities"],
         )
+
         phase = np.random.choice(
-            config["phase"]["choices"], p=config["phase"]["probabilities"]
+            self.config["phase"]["choices"], p=self.config["phase"]["probabilities"]
         )
+
         gender = np.random.choice(
-            config["gender"]["choices"], p=config["gender"]["probabilities"]
+            self.config["gender"]["choices"], p=self.config["gender"]["probabilities"]
         )
+
         region = np.random.choice(
-            config["region"]["choices"], p=config["region"]["probabilities"]
+            self.config["region"]["choices"], p=self.config["region"]["probabilities"]
         )
+
         risk_profile = np.random.choice(
             cluster_config["risk_profile"]["choices"],
             p=cluster_config["risk_profile"]["probabilities"],
         )
+
         contrib_freq = np.random.choice(
-            config["contrib_freq"]["choices"], p=config["contrib_freq"]["probabilities"]
+            self.config["contrib_freq"]["choices"],
+            p=self.config["contrib_freq"]["probabilities"],
         )
-        logins_pm = int(
+
+        logins_per_month = int(
             np.clip(
-                np.random.poisson(lam=config["logins_per_month"]["mean"]),
-                config["logins_per_month"]["min"],
-                config["logins_per_month"]["max"],
+                np.random.poisson(lam=self.config["logins_per_month"]["mean"]),
+                self.config["logins_per_month"]["min"],
+                self.config["logins_per_month"]["max"],
             )
         )
 
-        name = fake.name()
-        email = make_au_email(name, email_domains)
+        name = self.fake.name()
+        email = make_au_email(name, self.email_domains)
 
-        # Assign
-        names[i] = name
-        emails[i] = email
-        ages[i] = age
-        balances[i] = balance
-        num_accounts[i] = n_acc
-        last_login_days[i] = last_login
-        satisfaction_scores[i] = satisfaction
-        professions[i] = profession
-        phases[i] = phase
-        genders[i] = gender
-        regions[i] = region
-        risk_profiles[i] = risk_profile
-        contrib_freqs[i] = contrib_freq
-        logins_per_month[i] = logins_pm
-        true_segments[i] = cluster_name
+        return {
+            "name": name,
+            "email": email,
+            "age": age,
+            "balance": balance,
+            "num_accounts": num_accounts,
+            "last_login_days": last_login_days,
+            "satisfaction_score": satisfaction_score,
+            "profession": profession,
+            "phase": phase,
+            "gender": gender,
+            "region": region,
+            "risk_profile": risk_profile,
+            "contrib_freq": contrib_freq,
+            "logins_per_month": logins_per_month,
+            "true_segment": cluster_name,
+        }
 
-        if (i + 1) % max(1, n_row // 10) == 0:
-            logger.info(f"Generated {i + 1}/{n_row} members...")
+    def generate(self, n_member: int) -> list:
+        data = []
+        for i in range(n_member):
+            data.append(self.generate_member())
+            if (i + 1) % max(1, n_member // 10) == 0:
+                logger.info(f"Generated {i + 1}/{n_member} members...")
+        return data
 
-    # Assemble dict-of-arrays for DuckDB
-    data = dict(
-        name=names,
-        email=emails,
-        age=ages,
-        balance=balances,
-        num_accounts=num_accounts,
-        last_login_days=last_login_days,
-        satisfaction_score=satisfaction_scores,
-        profession=professions,
-        phase=phases,
-        gender=genders,
-        region=regions,
-        risk_profile=risk_profiles,
-        contrib_freq=contrib_freqs,
-        logins_per_month=logins_per_month,
-        true_segment=true_segments,
-    )
 
+def write_members_to_parquet(data: list, output_file: str):
+    if not data:
+        raise ValueError("No data to write.")
+    # Convert list of dicts to dict of lists
+    columns = {k: [row[k] for row in data] for k in data[0]}
+    table = pa.table(columns)
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect()
-    logger.info(f"Writing {n_row} rows to {output_file} using DuckDB...")
-
-    table = pa.table(data)
-    con = duckdb.connect()
+    logger.info(f"Writing {len(data)} rows to {output_file} using DuckDB...")
     con.register("members", table)
     con.execute(f"COPY members TO '{output_file}' (FORMAT PARQUET)")
-    logger.success(f"Generated {n_row} members and saved to {output_file}")
+    logger.success(f"Generated {len(data)} members and saved to {output_file}")
+
+
+@hydra.main(version_base=None, config_path="../conf", config_name="config")
+def hydra_main(cfg: DictConfig):
+    config = OmegaConf.to_container(cfg, resolve=True)
+    n = config["data"]["n_member"]
+    seed = config["data"].get("random_seed", 42)
+    output_file = config["data"].get("output_file", "data/members.parquet")
+    force_generate = config["data"].get("force_generate", False)
+
+    logger.info(
+        f"Requested n_member={n}, output_file={output_file}, force_generate={force_generate}"
+    )
+
+    existing_rows = count_parquet_rows(output_file)
+    if existing_rows >= n and not force_generate:
+        logger.info(
+            f"{output_file} already exists with {existing_rows} rows (>= {n}); skipping generation."
+        )
+        return
+    elif existing_rows > 0:
+        logger.info(
+            f"{output_file} exists but has only {existing_rows} rows (< {n}); regenerating."
+        )
+
+    Faker.seed(seed)
+    np.random.seed(seed)
+
+    generator = MemberDataGenerator(config)
+    data = generator.generate(n)
+    write_members_to_parquet(data, output_file)
 
 
 if __name__ == "__main__":
-    main()
+    hydra_main()

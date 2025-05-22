@@ -1,15 +1,11 @@
-import ibis.backends
-import ibis.backends.duckdb
-import ibis.streamlit
 import streamlit as st
 import plotly.express as px
 import seaborn as sns
-import ibis
-
+import duckdb
 
 from super_segment.hydra_conf import load_hydra_conf
 
-from super_segment.model import SuperannuationSegmentationModel
+from super_segment.model import get_or_train_model
 from super_segment.utils import display_markdown_file
 
 
@@ -18,24 +14,25 @@ class SuperSegmentApp:
         self.config = load_hydra_conf()
         self.model = None
 
-    # @st.cache_data(show_spinner="Loading member data from Parquet with Ibis...")
-    def get_ibis_data(self):
+    def get_duckdb_data(self):
         parquet_path = self.config.data.output_file
-        con = ibis.connect(
-            "duckdb://penguins.ddb"
-        )  # Read the Parquet file as an Ibis table (uses DuckDB backend by default)
-        t = con.read_parquet(parquet_path, table_name="members")
-        # Convert to pandas DataFrame
-        df = t.to_pandas()
+        con = duckdb.connect()
+        df = con.execute(f"SELECT * FROM '{parquet_path}'").df()
+        con.close()
         return df
 
     def setup_session_state(self):
         if "data" not in st.session_state:
-            st.session_state["data"] = self.get_ibis_data()
-        if "model" not in st.session_state:
-            st.session_state["model"] = SuperannuationSegmentationModel()
-        if "fit_stats" not in st.session_state:
-            st.session_state["fit_stats"] = None
+            st.session_state["data"] = self.get_duckdb_data()
+        if (
+            "model" not in st.session_state
+            or "model_metadata" not in st.session_state
+            or "fit_stats" not in st.session_state
+        ):
+            model, metadata, fit_stats = get_or_train_model(st.session_state["data"])
+            st.session_state["model"] = model
+            st.session_state["model_metadata"] = metadata
+            st.session_state["fit_stats"] = fit_stats
 
     def sidebar_predict_form(self):
         st.header("Predict Segment for a Member")
@@ -93,7 +90,7 @@ class SuperSegmentApp:
             page_title="Superannuation Member Segmentation", layout="wide"
         )
         st.header("Superannuation Member Segmentation Explorer")
-        st.metric(label="Number of members:", value=self.config.data.n_member)
+        st.metric(label="Number of members:", value=f"{self.config.data.n_member:,}")
         self.setup_session_state()
 
         with st.sidebar:
@@ -112,6 +109,9 @@ class SuperSegmentApp:
         )
 
         with tab1:
+            st.info(
+                f"Model last trained: {st.session_state['model_metadata']['train_time']}"
+            )
             stats = st.session_state["model"].train(st.session_state["data"])
             st.session_state["fit_stats"] = stats
             st.toast("Segmentation model trained!")
