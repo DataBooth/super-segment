@@ -1,5 +1,5 @@
 data:
-  n_member: 100_000
+  n_member: 1_000
   random_seed: 123
   member_data_db_path: data/member_data.duckdb
   member_data_table: members

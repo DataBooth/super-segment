@@ -1,3 +1,7 @@
 defaults:
   - generate
   - _self_
+
+readme:
+  title: "Super Segment App"
+  description: "Explore and cluster superannuation members."

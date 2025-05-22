@@ -25,14 +25,26 @@ def compute_data_hash(df: pd.DataFrame) -> str:
     return m.hexdigest()
 
 
-def get_or_train_model(data, model_path="data/model.pkl", force_retrain=False):
+def get_or_train_model(
+    data,
+    model_path="model.pkl",
+    n_clusters=4,
+    use_age_cohort=False,
+    force_retrain=False,
+):
     if Path(model_path).exists() and not force_retrain:
         model, metadata, fit_stats = load_model_with_metadata(model_path)
-        if metadata["n_member"] == len(data):
+        current_hash = compute_data_hash(data)
+        if (
+            metadata["n_member"] == len(data)
+            and metadata.get("n_clusters", None) == n_clusters
+            and metadata.get("use_age_cohort", False) == use_age_cohort
+            and metadata.get("data_hash", None) == current_hash
+        ):
             logger.info(f"Loaded cached model (trained {metadata['train_time']})")
             return model, metadata, fit_stats
         else:
-            logger.info("Cached model data size mismatch; retraining.")
+            logger.info("Cached model metadata mismatch; retraining.")
     # Train and save new model
     model = SuperannuationSegmentationModel()
     fit_stats = model.train(data)

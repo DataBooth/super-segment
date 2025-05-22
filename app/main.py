@@ -109,6 +109,17 @@ class SuperSegmentApp:
         )
 
         with tab1:
+            n_clusters = st.number_input(
+                "Number of clusters", min_value=2, max_value=12, value=4
+            )
+            if st.button("Train Model"):
+                model, metadata, fit_stats = get_or_train_model(
+                    st.session_state["data"], n_clusters=n_clusters
+                )
+                st.session_state["model"] = model
+                st.session_state["model_metadata"] = metadata
+                st.session_state["fit_stats"] = fit_stats
+
             st.info(
                 f"Model last trained: {st.session_state['model_metadata']['train_time']}"
             )
@@ -237,9 +248,9 @@ class SuperSegmentApp:
                 st.line_chart(pivot)
 
         with tab_readme:
-            display_markdown_file(
-                "README.md", remove_title=getattr(self.config.readme, "title", None)
-            )
+            readme_cfg = getattr(self.config, "readme", None)
+            remove_title = getattr(readme_cfg, "title", None) if readme_cfg else None
+            display_markdown_file("README.md", remove_title)
 
 
 # --- Run the App ---
