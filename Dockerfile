@@ -32,6 +32,7 @@ COPY --chown=appuser:appuser app app
 COPY --chown=appuser:appuser conf conf
 COPY --chown=appuser:appuser data data
 COPY --chown=appuser:appuser README.md .
+COPY --chown=appuser:appuser src src
 
 # Install your local package (editable or normal)
 # RUN uv pip install -e . (already happened in uv sync)
