@@ -31,6 +31,7 @@ RUN uv sync --no-dev
 COPY --chown=appuser:appuser app app
 COPY --chown=appuser:appuser conf conf
 COPY --chown=appuser:appuser data data
+COPY --chown=appuser:appuser docs docs
 COPY --chown=appuser:appuser README.md .
 COPY --chown=appuser:appuser src src
 

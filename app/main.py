@@ -4,8 +4,61 @@ import seaborn as sns
 import duckdb
 from super_segment.model import get_or_train_model
 from super_segment.utils import display_markdown_file
-from super_segment.app_config import AppConfig
+from super_segment.project_config import ProjectConfig  # Updated import
 import datetime
+
+import plotly.express as px
+import streamlit as st
+import pandas as pd
+
+def show_cluster_size_bubbles(cluster_sizes: pd.DataFrame, title: str = "Cluster Sizes (relative, bubble size = count, label = % of total)"):
+    """
+    Display cluster sizes as a bubble chart with percentage and count labels in Streamlit.
+
+    Args:
+        cluster_sizes (pd.DataFrame): DataFrame with columns 'segment' and 'count'.
+        title (str): Chart title.
+    """
+    total = cluster_sizes["count"].sum()
+    cluster_sizes = cluster_sizes.copy()
+    cluster_sizes["percent"] = 100 * cluster_sizes["count"] / total
+    # Label includes segment, percent, and count
+    cluster_sizes["label"] = cluster_sizes.apply(
+        lambda row: f"{row['segment']:.0f}: {row['percent']:.1f}% ({row['count']:.0f})", axis=1
+    )
+
+    # Offset bubbles along the x-axis so they don't overlap
+    cluster_sizes["x"] = range(len(cluster_sizes))
+    cluster_sizes["y"] = 0  # All on same horizontal line
+
+    fig = px.scatter(
+        cluster_sizes,
+        x="x",
+        y="y",
+        size="count",
+        color="segment",
+        hover_name="segment",
+        hover_data={"count": True, "percent": ':.0f'},
+        text="label",
+        size_max=80,
+    )
+
+    fig.update_traces(
+        textposition='top center',
+        marker=dict(line=dict(width=2, color='DarkSlateGrey'))
+    )
+    fig.update_layout(
+        showlegend=True,
+        xaxis=dict(visible=False),
+        yaxis=dict(visible=False),
+        title=title,
+        margin=dict(l=20, r=20, t=40, b=20),
+        height=350
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+
 
 def format_train_time(train_time_str):
     # Parse the timestamp (assuming ISO format, e.g., '2025-05-27T08:35:00')
@@ -32,15 +85,14 @@ def format_train_time(train_time_str):
 
     return f"**Model last trained: {formatted_date} ({ago})**"
 
-
 class SuperSegmentApp:
     def __init__(self):
-        self.config = AppConfig()
+        self.config = ProjectConfig()  # Updated to ProjectConfig
         # For convenience, get UI config (sidebar section) once
-        self.ui = self.config.get("sidebar", sub_name="ui")
+        self.ui = self.config.get("sidebar", file="ui")
 
     def get_duckdb_data(self):
-        parquet_path = self.config.get("data", "output_file", sub_name="generate")
+        parquet_path = self.config.get("data", "output_file", file="generate")
         con = duckdb.connect()
         df = con.execute(f"SELECT * FROM '{parquet_path}'").df()
         con.close()
@@ -205,7 +257,7 @@ class SuperSegmentApp:
         )
 
         with tab1:
-            col1, col2, _ = st.columns([1, 1, 1], gap="large")
+            col1, col2, col3 = st.columns([1, 1, 1], gap="large")
             with col2:
                 n_clusters = st.slider(
                     "Number of groups (clusters)", min_value=2, max_value=6, value=4
@@ -227,19 +279,29 @@ class SuperSegmentApp:
                         format_train_time(st.session_state['model_metadata']['train_time'])
                     )
                     st.toast("Segmentation model trained!")
-            if st.session_state["fit_stats"]:
-                st.metric(
-                    label="Silhouette Score",
-                    value=f"{float(st.session_state['fit_stats']['silhouette']):.2f}",
-                    help="Silhouette Score measures how well members fit within their segment (ranges from -1 to 1; higher is better for clustering quality).",
-                )
-                st.subheader("Cluster Sizes")
-                st.dataframe(st.session_state["fit_stats"]["cluster_sizes"])
-            display_markdown_file("docs/metrics.md")
+            with col3:
+                if st.session_state["fit_stats"]:
+                    st.metric(
+                        label="Silhouette Score",
+                        value=f"{float(st.session_state['fit_stats']['silhouette']):.2f}",
+                        help="Silhouette Score measures how well members fit within their segment (ranges from -1 to 1; higher is better for clustering quality).",
+                    )
+            st.subheader("Cluster Sizes")
+            # Suppose cluster_sizes is a Series where the index is the segment and the value is the count
+            cluster_sizes = st.session_state["fit_stats"]["cluster_sizes"]
+
+            # If it's a Series, convert to DataFrame with columns 'segment' and 'count'
+            if isinstance(cluster_sizes, pd.Series):
+                cluster_sizes = cluster_sizes.reset_index()
+                cluster_sizes.columns = ['segment', 'count']
+
+            show_cluster_size_bubbles(cluster_sizes)
+            with st.container(border=True):
+                display_markdown_file("docs/metrics.md")
 
         with tab2:
             n_sample = self.config.get(
-                "data", "n_sample", sub_name="generate", default=20
+                "data", "n_sample", file="generate", default=20
             )
             st.subheader(f"Sample of Synthetic Member Data: {n_sample} rows")
             st.dataframe(st.session_state["data"].sample(n_sample), hide_index=True)
@@ -347,7 +409,6 @@ class SuperSegmentApp:
         with tab_readme:
             readme_file = self.config.get("app", "readme_file", default="README.md")
             display_markdown_file(readme_file)
-
 
 if __name__ == "__main__":
     app = SuperSegmentApp()

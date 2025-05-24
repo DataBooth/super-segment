@@ -12,6 +12,7 @@ dependencies = [
     "matplotlib",
     "pandas",
     "plotly",
+    "python-dotenv>=1.1.0",
     "scikit-learn",
     "seaborn",
     "statsmodels",

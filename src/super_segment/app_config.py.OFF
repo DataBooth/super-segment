@@ -1,23 +1,33 @@
 from pathlib import Path
 from pprint import pprint
 import toml
+from loguru import logger
 
-def find_project_root(marker="pyproject.toml"):
-    """Recursively search parent directories for the project root marker file."""
-    current = Path(__file__).resolve().parent
+def find_project_root(marker="pyproject.toml", start_dir=None):
+    """
+    Recursively search parent directories for the project root marker file.
+    If start_dir is provided, start the search from there.
+    """
+    if start_dir is not None:
+        current = Path(start_dir).resolve()
+    else:
+        current = Path(__file__).resolve().parent
     while current != current.parent:
+        logger.debug(f"[find_project_root] Searching: {current}")
         if (current / marker).exists():
             return current
         current = current.parent
     raise FileNotFoundError(f"Could not find project root (missing {marker})")
 
+
 class AppConfig:
-    def __init__(self, main_path="app_config.toml", conf_dir="conf"):
+    def __init__(self, main_path="app_config.toml", conf_dir="conf", project_root=None):
         # If conf_dir is absolute, use it; otherwise, anchor to project root
         conf_dir_path = Path(conf_dir)
         if not conf_dir_path.is_absolute():
-            project_root = find_project_root()
-            self.conf_dir = project_root / conf_dir_path
+            root = find_project_root(start_dir=project_root)
+            logger.debug(f"[AppConfig] Using project root: {root}") 
+            self.conf_dir = root / conf_dir_path
         else:
             self.conf_dir = conf_dir_path
 

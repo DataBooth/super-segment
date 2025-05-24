@@ -1,6 +1,4 @@
-Better-quality segmentation models in superannuation balance statistical rigour, business value, and practical constraints. Here’s a summary of leading approaches and recent research insights:
-
-## Approaches to Member Segmentation
+## Common Approaches to Member Segmentation
 
 - **Demographic Segmentation:**  
   Uses basic factors like age, gender, account balance, and employment type. Age remains the most predictive single variable for superannuation needs and communication[1][4]. However, overly granular demographic splits can become impractical or misleading[1].

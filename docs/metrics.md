@@ -28,12 +28,6 @@ The table below summarises the key metrics used to evaluate the quality of membe
 | 1       | 25,000| 0.38             | 51      | $120,000    | High School Teacher   |     |
 | ...     | ...   | ...              | ...     | ...         | ...                   |     |
 
----
-
-Certainly! Here’s an expanded metrics section for segmentation, including advanced clustering metrics and business actionability measures, with clear explanations:
-
----
-
 ### **Understanding Clustering Metrics for Segmentation**
 
 The table below summarises key metrics for evaluating the quality and business usefulness of member segmentation:
@@ -93,6 +87,7 @@ The table below summarises key metrics for evaluating the quality and business u
 ---
 
 **Note:**  
+
 Unlike classification, segmentation does not have “precision” or “recall” because there are no ground-truth segment labels. Metrics focus on how well the data clusters and how useful the segments are for business objectives.
 
 ---
