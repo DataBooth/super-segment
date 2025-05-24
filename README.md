@@ -1,4 +1,4 @@
-# Superannuation Member Segmentation Project
+# Superannuation Member Segmentation
 
 ## Overview
 
@@ -31,26 +31,6 @@ This project provides a comprehensive framework for segmenting superannuation fu
   - Download segment summaries for reporting
 - **Ethical and Legal Compliance:**  
   Designed to align with the Australian Privacy Principles and industry ethical standards.
-
----
-
-## Folder Structure
-
-```
-superannuation-segmentation/
-│
-├── data/
-│   └── synthetic_members.csv
-├── src/
-│   ├── data_generation.py
-│   ├── segmentation_models.py
-│   ├── evaluation.py
-│   └── utils.py
-├── app/
-│   └── streamlit_app.py
-├── README.md
-└── requirements.txt
-```
 
 ---
 
@@ -124,15 +104,14 @@ For more detail on ethical considerations and APP compliance, see the [Ethics an
 ### Prerequisites
 
 - Python 3.9+
-- pip (for dependencies)
-- Streamlit
+- See `pyproject.toml`
 
 ### Installation
 
 ```bash
-git clone https://github.com/your-org/superannuation-segmentation.git
-cd superannuation-segmentation
-pip install -r requirements.txt
+git clone https://github.com/databooth/super-segment.git
+cd super-segment
+uv sync
 ```
 
 ### Running the App
@@ -145,7 +124,7 @@ streamlit run app/streamlit_app.py
 
 ## Customisation
 
-- Adjust synthetic data parameters in `src/data_generation.py` to better reflect your fund’s member base.
+- Adjust synthetic data parameters in `scripts/data_generation.py` to better reflect your fund’s member base.
 - Add or remove features in `segmentation_models.py` as needed.
 - Update business rules for rule-based segmentation in `segmentation_models.py`.
 - Extend the Streamlit interface in `app/streamlit_app.py` for additional visualisations or export options.
@@ -171,17 +150,9 @@ This project is designed with strict adherence to the Australian Privacy Princip
 
 ---
 
-## References
-
-- [The psychology of super fund member segmentation][6]
-- [Australian Privacy Principles – OAIC](https://www.oaic.gov.au/privacy/australian-privacy-principles)
-- [Customer segmentation templates and guides][3][4][5]
-
----
-
 ## Contact
 
-For questions, suggestions, or contributions, please raise an issue or contact the project maintainer.
+For questions, suggestions, or contributions, please raise an issue or contact [support@databooth.com.au](mailto:support@databooth.com.au).
 
 ---
 
@@ -189,16 +160,17 @@ For questions, suggestions, or contributions, please raise an issue or contact t
 
 ---
 
-[6]: https://www.fssuper.com.au/article/the-psychology-of-super-fund-member-segmentation  
-[3]: https://www.slideteam.net/blog/top-10-customer-segmentation-templates-with-samples-and-examples  
-[4]: https://boardmix.com/articles/market-segmentation-example/  
-[5]: https://www.ayoa.com/templates/market-segmentation-template/
+## References: 
 
-Citations:
-[1] https://github.com/stevehoober254/customer_segmentation/blob/main/README.md
-[2] https://github.com/Suwarti/Customer-Segmentation/blob/main/README.md
-[3] https://www.slideteam.net/blog/top-10-customer-segmentation-templates-with-samples-and-examples
-[4] https://boardmix.com/articles/market-segmentation-example/
-[5] https://www.ayoa.com/templates/market-segmentation-template/
-[6] https://www.fssuper.com.au/article/the-psychology-of-super-fund-member-segmentation
-[7] https://www.youtube.com/watch?v=SRr0tlUJjcw
+[1] https://www.youtube.com/watch?v=SRr0tlUJjcw
+
+[2] https://github.com/Suwarti/Customer-Segmentation/blob/main/README.md  
+
+[3] https://www.slideteam.net/blog/top-10-customer-segmentation-templates-with-samples-and-examples  
+
+[4] https://boardmix.com/articles/market-segmentation-example/  
+
+[5] https://www.ayoa.com/templates/market-segmentation-template/  
+
+[6] https://www.fssuper.com.au/article/the-psychology-of-super-fund-member-segmentation  
+

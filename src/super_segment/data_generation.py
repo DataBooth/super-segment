@@ -1,131 +1,128 @@
 from pathlib import Path
-
 import duckdb
 import numpy as np
 import pandas as pd
 from faker import Faker
 from loguru import logger
+from super_segment.project_config import ProjectConfig  
 
-
-def generate_age(config) -> int:
+def generate_age(config: ProjectConfig) -> int:
     return int(
         np.clip(
-            np.random.normal(loc=config["age"]["mean"], scale=config["age"]["std"]),
-            config["age"]["min"],
-            config["age"]["max"],
+            np.random.normal(
+                loc=config.get("age", "mean", file="generate"),
+                scale=config.get("age", "std", file="generate")
+            ),
+            config.get("age", "min", file="generate"),
+            config.get("age", "max", file="generate"),
         )
     )
 
-
-def generate_balance(config) -> int:
+def generate_balance(config: ProjectConfig) -> int:
     balance = int(
         np.random.lognormal(
-            mean=config["balance"]["mean"], sigma=config["balance"]["sigma"]
+            mean=config.get("balance", "mean", file="generate"),
+            sigma=config.get("balance", "sigma", file="generate")
         )
     )
-    return np.clip(balance, config["balance"]["min"], config["balance"]["max"])
-
-
-def generate_num_accounts(config) -> int:
-    return np.random.choice(
-        config["num_accounts"]["choices"], p=config["num_accounts"]["probabilities"]
+    return np.clip(
+        balance,
+        config.get("balance", "min", file="generate"),
+        config.get("balance", "max", file="generate")
     )
 
+def generate_num_accounts(config: ProjectConfig) -> int:
+    return np.random.choice(
+        config.get("num_accounts", "choices", file="generate"),
+        p=config.get("num_accounts", "probabilities", file="generate")
+    )
 
-def generate_last_login_days(config) -> int:
+def generate_last_login_days(config: ProjectConfig) -> int:
     return int(
         np.clip(
-            np.random.exponential(scale=config["last_login_days"]["scale"]),
-            config["last_login_days"]["min"],
-            config["last_login_days"]["max"],
+            np.random.exponential(scale=config.get("last_login_days", "scale", file="generate")),
+            config.get("last_login_days", "min", file="generate"),
+            config.get("last_login_days", "max", file="generate"),
         )
     )
 
-
-def generate_satisfaction_score(config) -> int:
+def generate_satisfaction_score(config: ProjectConfig) -> int:
     return np.random.choice(
-        config["satisfaction_score"]["choices"],
-        p=config["satisfaction_score"]["probabilities"],
+        config.get("satisfaction_score", "choices", file="generate"),
+        p=config.get("satisfaction_score", "probabilities", file="generate")
     )
 
-
-def generate_profession(config) -> str:
+def generate_profession(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["profession"]["choices"],
-        p=config["profession"]["probabilities"],
+        config.get("profession", "choices", file="generate"),
+        p=config.get("profession", "probabilities", file="generate")
     )
 
-
-def generate_phase(config) -> str:
+def generate_phase(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["phase"]["choices"],
-        p=config["phase"]["probabilities"],
+        config.get("phase", "choices", file="generate"),
+        p=config.get("phase", "probabilities", file="generate")
     )
 
-
-def generate_gender(config) -> str:
+def generate_gender(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["gender"]["choices"],
-        p=config["gender"]["probabilities"],
+        config.get("gender", "choices", file="generate"),
+        p=config.get("gender", "probabilities", file="generate")
     )
 
-
-def generate_region(config) -> str:
+def generate_region(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["region"]["choices"],
-        p=config["region"]["probabilities"],
+        config.get("region", "choices", file="generate"),
+        p=config.get("region", "probabilities", file="generate")
     )
 
-
-def generate_risk_profile(config) -> str:
+def generate_risk_profile(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["risk_profile"]["choices"],
-        p=config["risk_profile"]["probabilities"],
+        config.get("risk_profile", "choices", file="generate"),
+        p=config.get("risk_profile", "probabilities", file="generate")
     )
 
-
-def generate_contrib_freq(config) -> str:
+def generate_contrib_freq(config: ProjectConfig) -> str:
     return np.random.choice(
-        config["contrib_freq"]["choices"],
-        p=config["contrib_freq"]["probabilities"],
+        config.get("contrib_freq", "choices", file="generate"),
+        p=config.get("contrib_freq", "probabilities", file="generate")
     )
 
-
-def generate_logins_per_month(config) -> int:
+def generate_logins_per_month(config: ProjectConfig) -> int:
     return int(
         np.clip(
-            np.random.poisson(lam=config["logins_per_month"]["mean"]),
-            config["logins_per_month"]["min"],
-            config["logins_per_month"]["max"],
+            np.random.poisson(lam=config.get("logins_per_month", "mean", file="generate")),
+            config.get("logins_per_month", "min", file="generate"),
+            config.get("logins_per_month", "max", file="generate"),
         )
     )
-
 
 class MemberDataGenerator:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: ProjectConfig) -> None:
         self.config = config
         self.fake = Faker()
-        Faker.seed(config["data"]["random_seed"])
-        np.random.seed(config["data"]["random_seed"])
+        random_seed = self.config.get("data", "random_seed", file="generate")
+        Faker.seed(random_seed)
+        np.random.seed(random_seed)
 
         # Cluster setup
-        self.cluster_names = config["clusters"]["segment_names"]
-        self.cluster_probs = config["clusters"]["segment_probs"]
+        self.cluster_names = self.config.get("clusters", "segment_names", file="generate")
+        self.cluster_probs = self.config.get("clusters", "segment_probs", file="generate")
         if not np.isclose(sum(self.cluster_probs), 1.0):
             raise ValueError("Cluster probabilities must sum to 1")
 
     def _get_cluster_config(self, cluster_name: str) -> dict:
-        """Get feature parameters for a specific cluster"""
-        return self.config["clusters"][cluster_name]
+        """Get feature parameters for a specific cluster from the config."""
+        return self.config.get("clusters", cluster_name, file="generate")
 
     def make_au_email(self, name: str) -> str:
-        domains = self.config["email"]["domains"]
+        domains = self.config.get("email", "domains", file="generate")
         username = name.lower().replace(" ", ".").replace("'", "").replace("-", "")
         domain = np.random.choice(domains)
         return f"{username}@{domain}"
 
     def generate(self, n_member=None) -> pd.DataFrame:
-        n = n_member if n_member is not None else self.config["data"]["n_member"]
+        n = n_member if n_member is not None else self.config.get("data", "n_member", file="generate")
         data = []
         for _ in range(n):
             # Assign to a cluster first
@@ -133,18 +130,16 @@ class MemberDataGenerator:
             cluster_config = self._get_cluster_config(cluster_name)
 
             # Generate features using cluster-specific parameters
-            age = generate_age(cluster_config)
-            balance = generate_balance(cluster_config)
-            num_accounts = generate_num_accounts(cluster_config)
-            last_login_days = generate_last_login_days(
-                self.config
-            )  # Use global for non-clustered features
+            age = generate_age(self.config)
+            balance = generate_balance(self.config)
+            num_accounts = generate_num_accounts(self.config)
+            last_login_days = generate_last_login_days(self.config)
             satisfaction_score = generate_satisfaction_score(self.config)
-            profession = generate_profession(cluster_config)
+            profession = generate_profession(self.config)
             phase = generate_phase(self.config)
             gender = generate_gender(self.config)
             region = generate_region(self.config)
-            risk_profile = generate_risk_profile(cluster_config)
+            risk_profile = generate_risk_profile(self.config)
             contrib_freq = generate_contrib_freq(self.config)
             logins_per_month = generate_logins_per_month(self.config)
 
@@ -173,10 +168,9 @@ class MemberDataGenerator:
 
         return pd.DataFrame(data)
 
-
-def get_or_generate_member_data(n_member, generator, config):
-    db_path = Path(config["data"]["member_data_db_path"])
-    table = config["data"]["member_data_table"]
+def get_or_generate_member_data(n_member: int, generator: MemberDataGenerator, config: ProjectConfig) -> pd.DataFrame:
+    db_path = Path(config.get("data", "member_data_db_path", file="generate"))
+    table = config.get("data", "member_data_table", file="generate")
 
     # Ensure the parent directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)

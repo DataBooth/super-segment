@@ -300,11 +300,11 @@ class SuperSegmentApp:
                 display_markdown_file("docs/metrics.md")
 
         with tab2:
-            n_sample = self.config.get(
-                "data", "n_sample", file="generate", default=20
+            n_member = self.config.get(
+                "data", "n_member", file="generate", default=1000
             )
-            st.subheader(f"Sample of Synthetic Member Data: {n_sample} rows")
-            st.dataframe(st.session_state["data"].sample(n_sample), hide_index=True)
+            st.subheader(f"Synthetic Member Data sample: {n_member} rows")
+            st.dataframe(st.session_state["data"].sample(n_member), hide_index=True)
 
         with tab3:
             pairwise_features_default = [

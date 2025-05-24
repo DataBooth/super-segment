@@ -131,8 +131,8 @@ To ensure the robustness of our clustering results to the choice of age cohort b
 
 In addition to hard clustering, we apply fuzzy clustering (fuzzy c-means), which allows each member to have degrees of membership in multiple clusters. This approach reflects the reality that some individuals may not fit neatly into a single group. We present the membership matrix and visualize the cluster centers to aid interpretation.
 
-
 ---
 
 **Note:**  
+
 Unlike logistic regression, clustering does not yield explicit coefficients or probabilities, but instead finds natural groupings in the data based on all included features.

@@ -92,18 +92,31 @@ Unlike classification, segmentation does not have “precision” or “recall�
 
 ---
 
-Citations:
-[1] https://www.numberanalytics.com/blog/comprehensive-guide-davies-bouldin-3-clustering-use-cases
-[2] https://en.wikipedia.org/wiki/Davies%E2%80%93Bouldin_index
-[3] https://www.numberanalytics.com/blog/davies-bouldin-index-5-essential-metrics
-[4] https://codesignal.com/learn/courses/cluster-performance-unveiled/lessons/mastering-the-davies-bouldin-index-for-clustering-model-validation
-[5] https://www.mathworks.com/help/stats/clustering.evaluation.daviesbouldinevaluation.html
-[6] https://www.numberanalytics.com/blog/expert-comparison-6-clustering-metrics-calinski-harabasz-index
-[7] https://www.linkedin.com/pulse/evaluating-clustering-algorithms-comprehensive-guide-mba-ms-phd-mrvrc
-[8] https://towardsdatascience.com/davies-bouldin-index-for-k-means-clustering-evaluation-in-python-57f66da15cd/
-[9] https://en.wikipedia.org/wiki/Calinski%E2%80%93Harabasz_index
-[10] https://www.toptal.com/machine-learning/clustering-metrics-for-comparison
-[11] https://gpttutorpro.com/machine-learning-evaluation-mastery-how-to-use-silhouette-score-and-calinski-harabasz-index-for-clustering-problems/
-[12] https://www.mathworks.com/help/stats/clustering.evaluation.calinskiharabaszevaluation.html
+## References
+
+[1] https://www.numberanalytics.com/blog/comprehensive-guide-davies-bouldin-3-clustering-use-cases  
+
+[2] https://en.wikipedia.org/wiki/Davies%E2%80%93Bouldin_index  
+
+[3] https://www.numberanalytics.com/blog/davies-bouldin-index-5-essential-metrics  
+
+[4] https://codesignal.com/learn/courses/cluster-performance-unveiled/lessons/mastering-the-davies-bouldin-index-for-clustering-model-validation  
+
+[5] https://www.mathworks.com/help/stats/clustering.evaluation.daviesbouldinevaluation.html  
+
+[6] https://www.numberanalytics.com/blog/expert-comparison-6-clustering-metrics-calinski-harabasz-index  
+
+[7] https://www.linkedin.com/pulse/evaluating-clustering-algorithms-comprehensive-guide-mba-ms-phd-mrvrc  
+
+[8] https://towardsdatascience.com/davies-bouldin-index-for-k-means-clustering-evaluation-in-python-57f66da15cd/  
+
+[9] https://en.wikipedia.org/wiki/Calinski%E2%80%93Harabasz_index  
+
+[10] https://www.toptal.com/machine-learning/clustering-metrics-for-comparison  
+
+[11] https://gpttutorpro.com/machine-learning-evaluation-mastery-how-to-use-silhouette-score-and-calinski-harabasz-index-for-clustering-problems/  
+
+[12] https://www.mathworks.com/help/stats/clustering.evaluation.calinskiharabaszevaluation.html  
+
 [13] https://www.lancaster.ac.uk/stor-i-student-sites/harini-jayaraman/k-means-clustering/
 

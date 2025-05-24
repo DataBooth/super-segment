@@ -37,14 +37,22 @@
 
 The best segmentation models for superannuation combine demographic, behavioural, and psychographic data, are dynamic (not static), and are simple enough to be actionable. Recent research cautions against over-complicating models and stresses the importance of matching segmentation to real member needs and fund objectives[1][4][5][7].
 
-Citations:
-[1] https://media.fssuper.com.au/prod/media/library/FS_Super/FS_Super_The_pscyhology_of_super_fund_member_segmentation.pdf
-[2] https://www.apra.gov.au/sites/default/files/segmentation_of_superannuation_entities.pdf
-[3] https://www.wtwco.com/-/media/wtw/insights/2022/04/superannuation-fund-operating-models.pdf
-[4] https://www.superannuation.asn.au/rethinking-data-and-member-engagement/
-[5] https://nousgroup.com/insights/dynamic-give-super-funds-an-edge
-[6] https://www.apra.gov.au/sites/default/files/Peng-Determinants-of-member-choice-in-the-Australian-superannuation-industry.pdf
-[7] https://treasury.gov.au/sites/default/files/2021-09/c2021-188347-super_consumers_australia.pdf
+## References
+
+[1] https://media.fssuper.com.au/prod/media/library/FS_Super/FS_Super_The_pscyhology_of_super_fund_member_segmentation.pdf  
+
+[2] https://www.apra.gov.au/sites/default/files/segmentation_of_superannuation_entities.pdf  
+
+[3] https://www.wtwco.com/-/media/wtw/insights/2022/04/superannuation-fund-operating-models.pdf  
+
+[4] https://www.superannuation.asn.au/rethinking-data-and-member-engagement/  
+
+[5] https://nousgroup.com/insights/dynamic-give-super-funds-an-edge  
+
+[6] https://www.apra.gov.au/sites/default/files/Peng-Determinants-of-member-choice-in-the-Australian-superannuation-industry.pdf  
+
+[7] https://treasury.gov.au/sites/default/files/2021-09/c2021-188347-super_consumers_australia.pdf  
+
 [8] https://arena.gov.au/assets/2021/07/upowr-customer-segmentation-research-and-design-for-orchestration-programs.pdf
 
 ## Ethical Considerations

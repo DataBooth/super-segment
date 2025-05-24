@@ -6,7 +6,7 @@ import pyarrow as pa
 from faker import Faker
 from loguru import logger
 
-from super_segment.app_config import AppConfig
+from super_segment.project_config import ProjectConfig  # Updated import
 
 
 def make_au_email(name, domains):
@@ -30,15 +30,16 @@ def count_parquet_rows(parquet_path: str) -> int:
 
 
 class MemberDataGenerator:
-    def __init__(self, config: dict):
+    def __init__(self, config: ProjectConfig):
         self.config = config
         self.fake = Faker()
-        Faker.seed(config["data"]["random_seed"])
-        np.random.seed(config["data"]["random_seed"])
-        self.cluster_names = config["clusters"]["segment_names"]
-        self.cluster_probs = config["clusters"]["segment_probs"]
-        self.clusters = config["clusters"]
-        self.email_domains = config["email"]["domains"]
+        random_seed = self.config.get("data", "random_seed", file="generate")
+        Faker.seed(random_seed)
+        np.random.seed(random_seed)
+        self.cluster_names = self.config.get("clusters", "segment_names", file="generate")
+        self.cluster_probs = self.config.get("clusters", "segment_probs", file="generate")
+        self.clusters = self.config.get("clusters", file="generate")
+        self.email_domains = self.config.get("email", "domains", file="generate")
 
     def generate_member(self) -> dict:
         cluster_name = np.random.choice(self.cluster_names, p=self.cluster_probs)
@@ -72,15 +73,15 @@ class MemberDataGenerator:
 
         last_login_days = int(
             np.clip(
-                np.random.exponential(scale=self.config["last_login_days"]["scale"]),
-                self.config["last_login_days"]["min"],
-                self.config["last_login_days"]["max"],
+                np.random.exponential(scale=self.config.get("last_login_days", "scale", file="generate")),
+                self.config.get("last_login_days", "min", file="generate"),
+                self.config.get("last_login_days", "max", file="generate"),
             )
         )
 
         satisfaction_score = np.random.choice(
-            self.config["satisfaction_score"]["choices"],
-            p=self.config["satisfaction_score"]["probabilities"],
+            self.config.get("satisfaction_score", "choices", file="generate"),
+            p=self.config.get("satisfaction_score", "probabilities", file="generate"),
         )
 
         profession = np.random.choice(
@@ -89,15 +90,18 @@ class MemberDataGenerator:
         )
 
         phase = np.random.choice(
-            self.config["phase"]["choices"], p=self.config["phase"]["probabilities"]
+            self.config.get("phase", "choices", file="generate"),
+            p=self.config.get("phase", "probabilities", file="generate"),
         )
 
         gender = np.random.choice(
-            self.config["gender"]["choices"], p=self.config["gender"]["probabilities"]
+            self.config.get("gender", "choices", file="generate"),
+            p=self.config.get("gender", "probabilities", file="generate"),
         )
 
         region = np.random.choice(
-            self.config["region"]["choices"], p=self.config["region"]["probabilities"]
+            self.config.get("region", "choices", file="generate"),
+            p=self.config.get("region", "probabilities", file="generate"),
         )
 
         risk_profile = np.random.choice(
@@ -106,15 +110,15 @@ class MemberDataGenerator:
         )
 
         contrib_freq = np.random.choice(
-            self.config["contrib_freq"]["choices"],
-            p=self.config["contrib_freq"]["probabilities"],
+            self.config.get("contrib_freq", "choices", file="generate"),
+            p=self.config.get("contrib_freq", "probabilities", file="generate"),
         )
 
         logins_per_month = int(
             np.clip(
-                np.random.poisson(lam=self.config["logins_per_month"]["mean"]),
-                self.config["logins_per_month"]["min"],
-                self.config["logins_per_month"]["max"],
+                np.random.poisson(lam=self.config.get("logins_per_month", "mean", file="generate")),
+                self.config.get("logins_per_month", "min", file="generate"),
+                self.config.get("logins_per_month", "max", file="generate"),
             )
         )
 
@@ -144,7 +148,7 @@ class MemberDataGenerator:
         for i in range(n_member):
             data.append(self.generate_member())
             if (i + 1) % max(1, n_member // 10) == 0:
-                logger.info(f"Generated {i + 1}/{n_member} members...")
+                logger.debug(f"Generated {i + 1}/{n_member} members...")
         return data
 
 
@@ -163,13 +167,12 @@ def write_members_to_parquet(data: list, output_file: str):
 
 
 def main():
-    config = AppConfig()
-    generate_config = config.sub_configs["generate"]
-
-    n_row = generate_config["data"]["n_member"]
-    seed = generate_config["data"]["random_seed"]
-    output_file = generate_config["data"]["output_file"]
-    force_generate = generate_config["data"]["force_generate"]
+    config = ProjectConfig()
+    # All config access now via .get(..., file="generate")
+    n_row = config.get("data", "n_member", file="generate")
+    seed = config.get("data", "random_seed", file="generate")
+    output_file = config.get("data", "output_file", file="generate")
+    force_generate = config.get("data", "force_generate", file="generate")
 
     logger.info(
         f"Requested n_member={n_row}, output_file={output_file}, force_generate={force_generate}"
@@ -189,7 +192,7 @@ def main():
     Faker.seed(seed)
     np.random.seed(seed)
 
-    generator = MemberDataGenerator(generate_config)
+    generator = MemberDataGenerator(config)
     data = generator.generate(n_row)
     write_members_to_parquet(data, output_file)
 
