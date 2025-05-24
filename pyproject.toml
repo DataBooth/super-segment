@@ -21,7 +21,10 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["marimo>=0.13.10", "pytest>=8.3.5"]
+dev = [
+    "marimo>=0.13.10",
+ "pytest>=8.3.5",
+]
 
 [build-system]
 requires = ["setuptools", "wheel"]
